@@ -12,6 +12,7 @@ export interface Profile {
   avatar: string;
   color: string;
   daily_goal_xp: number;
+  weekly_goal_xp?: number;
   xp: number;
   streak: number;
   best_streak: number;
@@ -48,6 +49,7 @@ export interface PremiumStatus {
   dailyLimit: number | null;
   iban: string;
   price: string;
+  cardPayment?: boolean;
   plans: { key: string; label: string; days: number; cents: number; price: string }[];
   requests: { id: string; plan: string; amount_cents: number; status: string; note: string; created_at: string; decided_at: string | null }[];
 }
@@ -128,6 +130,8 @@ export interface Stats {
   level: LevelInfo;
   todayXp: number;
   dailyGoal: number;
+  weekXp?: number;
+  weeklyGoal?: number;
   avgGrade: number | null;
   weekly: { day: string; rounds: number; avgPercent: number }[];
   mistakes: { word: string; display: string; wrong_count: number; phonetic_count: number; correct_count: number; unclear_count: number }[];

@@ -33,6 +33,7 @@ export interface AuthProfile {
   avatar: string;
   color: string;
   daily_goal_xp: number;
+  weekly_goal_xp?: number;
   xp: number;
   streak: number;
   best_streak: number;

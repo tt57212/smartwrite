@@ -198,12 +198,13 @@ app.patch('/profiles/:id', async (c) => {
     .bind(id, auth.user.id).first<{ id: string }>();
   if (!profile) return jsonError(c, 'Profil nicht gefunden.', 404);
   const body = await c.req.json<{
-    name?: string; avatar?: string; color?: string; dailyGoalXp?: number; theme?: string;
+    name?: string; avatar?: string; color?: string; dailyGoalXp?: number; weeklyGoalXp?: number; theme?: string;
   }>();
   await c.env.DB.prepare(
-    'UPDATE profiles SET name = COALESCE(?, name), avatar = COALESCE(?, avatar), color = COALESCE(?, color), daily_goal_xp = COALESCE(?, daily_goal_xp) WHERE id = ?'
+    'UPDATE profiles SET name = COALESCE(?, name), avatar = COALESCE(?, avatar), color = COALESCE(?, color), daily_goal_xp = COALESCE(?, daily_goal_xp), weekly_goal_xp = COALESCE(?, weekly_goal_xp) WHERE id = ?'
   ).bind(body.name ?? null, body.avatar ?? null, body.color ?? null,
-    body.dailyGoalXp ? Math.min(Math.max(body.dailyGoalXp, 10), 1000) : null, id).run();
+    body.dailyGoalXp ? Math.min(Math.max(body.dailyGoalXp, 10), 1000) : null,
+    body.weeklyGoalXp ? Math.min(Math.max(body.weeklyGoalXp, 50), 5000) : null, id).run();
   return c.json({ ok: true });
 });
 
@@ -598,6 +599,12 @@ app.get('/stats', async (c) => {
      WHERE r.profile_id = ? AND date(a.created_at) = date('now')`
   ).bind(pid).first<{ xp: number }>();
 
+  const weekRow = await env.DB.prepare(
+    `SELECT COALESCE(SUM(a.points),0) AS xp FROM answers a
+     JOIN rounds r ON r.id = a.round_id
+     WHERE r.profile_id = ? AND a.created_at >= datetime('now', '-7 days')`
+  ).bind(pid).first<{ xp: number }>();
+
   const { results: weekly } = await env.DB.prepare(
     `SELECT date(r.finished_at) AS day, COUNT(*) AS rounds, ROUND(AVG(r.percent),1) AS avgPercent
      FROM rounds r WHERE r.profile_id = ? AND r.status='finished' AND r.finished_at >= date('now','-14 days')
@@ -630,6 +637,8 @@ app.get('/stats', async (c) => {
     level: { level, xpInto: into, xpNeeded: needed, xp: auth.profile.xp },
     todayXp: todayRow?.xp || 0,
     dailyGoal: auth.profile.daily_goal_xp,
+    weekXp: weekRow?.xp || 0,
+    weeklyGoal: (auth.profile as { weekly_goal_xp?: number }).weekly_goal_xp ?? 500,
     avgGrade,
     weekly,
     mistakes,
@@ -869,6 +878,7 @@ app.get('/premium', async (c) => {
     iban: PREMIUM_IBAN,
     price: PREMIUM_PRICE,
     plans: Object.entries(PREMIUM_PLANS).map(([key, p]) => ({ key, ...p, price: (p.cents / 100).toFixed(2).replace('.', ',') + ' €' })),
+    cardPayment: stripeConfigured(env),
     requests,
   });
 });
@@ -902,6 +912,92 @@ app.post('/premium/request', async (c) => {
   ).bind(id, auth.user.id, auth.user.email, plan!, p.cents, (note || '').slice(0, 500), dup ? 1 : 0).run();
 
   return c.json({ ok: true, id, duplicateWarning: !!dup }, 201);
+});
+
+// Stripe-Checkout (automatische Zahlung) – aktiv sobald STRIPE_SECRET_KEY gesetzt ist
+function stripeConfigured(env: Env): boolean {
+  return !!env.STRIPE_SECRET_KEY;
+}
+
+app.post('/premium/checkout', async (c) => {
+  const auth = await requireAuth(c);
+  const env = c.env;
+  if (!stripeConfigured(env)) return jsonError(c, 'Online-Zahlung nicht konfiguriert.', 503);
+  if (isPremiumUser(auth.user)) return jsonError(c, 'Du hast bereits Premium.');
+  const { plan } = await c.req.json<{ plan?: string }>();
+  const p = plan ? PREMIUM_PLANS[plan] : undefined;
+  if (!p) return jsonError(c, 'Ungültiger Tarif.');
+
+  const base = env.APP_URL || new URL(c.req.url).origin;
+  const body = new URLSearchParams();
+  body.set('mode', 'payment');
+  body.set('success_url', `${base}/premium?paid=1`);
+  body.set('cancel_url', `${base}/premium?canceled=1`);
+  body.set('client_reference_id', auth.user.id);
+  body.set('line_items[0][price_data][currency]', 'eur');
+  body.set('line_items[0][price_data][unit_amount]', String(p.cents));
+  body.set('line_items[0][price_data][product_data][name]', `SmartWrite Premium (${p.label})`);
+  body.set('line_items[0][quantity]', '1');
+  body.set('metadata[user_id]', auth.user.id);
+  body.set('metadata[plan]', plan!);
+  body.set('metadata[email]', auth.user.email);
+
+  const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: body.toString(),
+  });
+  if (!res.ok) return jsonError(c, 'Zahlungsservice nicht erreichbar.', 502);
+  const session = (await res.json()) as { url?: string };
+  return c.json({ url: session.url });
+});
+
+// Stripe-Webhook: aktiviert Premium automatisch nach erfolgreicher Zahlung
+app.post('/webhooks/stripe', async (c) => {
+  const env = c.env;
+  if (!env.STRIPE_WEBHOOK_SECRET) return c.json({ error: 'Webhook nicht konfiguriert' }, 503);
+  const signature = c.req.header('stripe-signature') || '';
+  const payload = await c.req.text();
+
+  // Signatur prüfen: t=timestamp,v1=hmac_sha256("${t}.${payload}")
+  const parts = Object.fromEntries(signature.split(',').map((kv) => kv.split('=')));
+  const t = parts.t;
+  const v1 = parts.v1;
+  if (!t || !v1) return c.json({ error: 'Ungültige Signatur' }, 400);
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(env.STRIPE_WEBHOOK_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${t}.${payload}`));
+  const expected = [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  if (expected !== v1) return c.json({ error: 'Signatur mismatch' }, 400);
+
+  const event = JSON.parse(payload) as {
+    type: string;
+    data?: { object?: { client_reference_id?: string; metadata?: { user_id?: string; plan?: string } } };
+  };
+  if (event.type !== 'checkout.session.completed') return c.json({ received: true });
+
+  const meta = event.data?.object?.metadata;
+  const userId = meta?.user_id || event.data?.object?.client_reference_id;
+  const plan = meta?.plan && PREMIUM_PLANS[meta.plan] ? meta.plan : 'monthly';
+  const days = PREMIUM_PLANS[plan].days;
+  if (!userId) return c.json({ received: true });
+
+  await env.DB.prepare(
+    `UPDATE users SET premium_until = (
+       SELECT strftime('%Y-%m-%d %H:%M:%S', MAX(COALESCE(premium_until, datetime('now')), datetime('now')), '+' || ? || ' days')
+       FROM users WHERE id = ?
+     ) WHERE id = ?`
+  ).bind(days, userId, userId).run();
+  await env.DB.prepare(
+    "INSERT INTO premium_requests (id, user_id, email, plan, amount_cents, status, note, decided_at, decided_by) VALUES (?, ?, (SELECT email FROM users WHERE id=?), ?, ?, 'approved', 'Stripe-Zahlung', datetime('now'), 'stripe')"
+  ).bind(uid(), userId, userId, plan, PREMIUM_PLANS[plan].cents).run();
+
+  return c.json({ received: true });
 });
 
 // ================= ADMIN =================

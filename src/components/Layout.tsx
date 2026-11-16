@@ -75,6 +75,9 @@ export function Layout() {
         {/* Profil-Umschalter */}
         <div className="border-t border-slate-200 p-3 dark:border-slate-800">
           <ProfileSwitcher />
+          <NavLink to="/datenschutz" className="mt-2 block rounded-lg px-2 py-1 text-center text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+            Datenschutzerklärung
+          </NavLink>
         </div>
       </aside>
 

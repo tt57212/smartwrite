@@ -1,0 +1,1 @@
+ALTER TABLE profiles ADD COLUMN weekly_goal_xp INTEGER NOT NULL DEFAULT 500;

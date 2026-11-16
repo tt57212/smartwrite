@@ -5,6 +5,9 @@ export interface Env {
   AI_MODEL?: string;
   ADMIN_EMAILS?: string;
   ENVIRONMENT?: string;
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  APP_URL?: string;
 }
 
 export function uid(): string {

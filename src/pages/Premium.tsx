@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { get, post } from '../lib/api';
 import type { PremiumStatus } from '../lib/types';
 import { useApp } from '../context';
@@ -12,6 +13,22 @@ export function Premium() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  const [params, setParams] = useSearchParams();
+  const [paidMsg, setPaidMsg] = useState('');
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+
+  useEffect(() => {
+    if (params.get('paid') === '1') {
+      setPaidMsg('Zahlung erhalten! Premium wird in wenigen Sekunden freigeschaltet.');
+      setParams({}, { replace: true });
+      setTimeout(() => void load(), 3000);
+      setTimeout(() => void refresh(), 4000);
+    } else if (params.get('canceled') === '1') {
+      setPaidMsg('Zahlung abgebrochen.');
+      setParams({}, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = () => get<PremiumStatus>('/premium').then(setData).catch(() => {});
   useEffect(() => { void load(); }, [me?.user.id]); // eslint-disable-line
@@ -35,12 +52,26 @@ export function Premium() {
     finally { setBusy(false); }
   };
 
+  const checkout = async () => {
+    setCheckoutBusy(true); setError('');
+    try {
+      const res = await post<{ url: string }>('/premium/checkout', { plan });
+      if (res.url) window.location.href = res.url;
+    } catch (e) { setError(e instanceof Error ? e.message : 'Fehler'); setCheckoutBusy(false); }
+  };
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-extrabold">⭐ SmartWrite Premium</h1>
         <p className="mt-1 text-slate-500 dark:text-slate-400">Unbegrenzte Runden, jeden Tag. Keine Limits, kein Stress.</p>
       </div>
+
+      {paidMsg && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-medium text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+          {paidMsg}
+        </div>
+      )}
 
       {data.isPremium ? (
         <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-8 text-center dark:border-emerald-500/30 dark:from-emerald-500/10 dark:to-teal-500/10">
@@ -78,6 +109,19 @@ export function Premium() {
               </button>
             ))}
           </div>
+
+          {/* Sofort-Kauf per Karte (Stripe) */}
+          {data.cardPayment && (
+            <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-violet-50 p-6 dark:border-indigo-500/30 dark:from-indigo-500/10 dark:to-violet-500/10">
+              <h2 className="mb-1 font-bold">⚡ Sofort bezahlen</h2>
+              <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
+                Kartenzahlung über Stripe – Premium wird <strong>automatisch sofort</strong> freigeschaltet.
+              </p>
+              <Button onClick={checkout} disabled={checkoutBusy || !!pending} className="w-full py-3">
+                {checkoutBusy ? 'Weiterleitung…' : `💳 Jetzt ${selected?.price} bezahlen`}
+              </Button>
+            </Card>
+          )}
 
           {/* Zahlung per Überweisung */}
           <Card className="p-6">

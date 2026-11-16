@@ -18,6 +18,7 @@ export function ProfilePage() {
   const [avatar, setAvatar] = useState('star');
   const [color, setColor] = useState('indigo');
   const [goal, setGoal] = useState(100);
+  const [weeklyGoal, setWeeklyGoal] = useState(500);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -30,6 +31,7 @@ export function ProfilePage() {
       setAvatar(me.profile.avatar);
       setColor(me.profile.color);
       setGoal(me.profile.daily_goal_xp);
+      setWeeklyGoal(me.profile.weekly_goal_xp ?? 500);
     }
     get<{ profiles: Profile[] }>('/profiles').then((d) => setProfiles(d.profiles)).catch(() => {});
   }, [me?.profile.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -40,7 +42,7 @@ export function ProfilePage() {
     e.preventDefault();
     setBusy(true); setError(''); setMsg('');
     try {
-      await patch(`/profiles/${me.profile.id}`, { name, avatar, color, dailyGoalXp: goal });
+      await patch(`/profiles/${me.profile.id}`, { name, avatar, color, dailyGoalXp: goal, weeklyGoalXp: weeklyGoal });
       setMsg('Profil gespeichert.');
       await refresh();
     } catch (err) { setError(err instanceof Error ? err.message : 'Fehler'); }
@@ -107,6 +109,12 @@ export function ProfilePage() {
           <div>
             <label className="mb-1.5 block text-sm font-medium">Tägliches Lernziel: {goal} XP</label>
             <input type="range" min={10} max={500} step={10} value={goal} onChange={(e) => setGoal(parseInt(e.target.value))} className="w-full accent-indigo-600" />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">Wöchentliches Lernziel: {weeklyGoal} XP</label>
+            <input type="range" min={50} max={5000} step={50} value={weeklyGoal} onChange={(e) => setWeeklyGoal(parseInt(e.target.value))} className="w-full accent-indigo-600" />
+            <p className="mt-1 text-xs text-slate-500">Der Fortschritt dazu siehst du auf dem Dashboard.</p>
           </div>
 
           {error && <ErrorBox message={error} />}

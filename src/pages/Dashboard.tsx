@@ -80,6 +80,12 @@ export function Dashboard() {
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Heutiges Ziel</p>
           <p className="mt-1 text-2xl font-extrabold">{stats.todayXp}<span className="text-sm font-medium text-slate-400">/{stats.dailyGoal} XP</span></p>
           <Progress value={stats.todayXp} max={stats.dailyGoal} className="mt-3" />
+          {(stats.weeklyGoal ?? 0) > 0 && (
+            <div className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+              <p className="text-[11px] font-medium text-slate-500">Diese Woche: {stats.weekXp ?? 0}/{stats.weeklyGoal} XP</p>
+              <Progress value={stats.weekXp ?? 0} max={stats.weeklyGoal ?? 1} className="mt-1.5" />
+            </div>
+          )}
         </Card>
         <Card className="p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Serie</p>
