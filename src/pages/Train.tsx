@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context';
 import { post, get } from '../lib/api';
-import type { RoundStart, WordList } from '../lib/types';
+import type { PremiumStatus, RoundStart, WordList } from '../lib/types';
 import { Button, Card, ErrorBox, Input, Select, Spinner } from '../components/ui';
 
 export function Train() {
@@ -17,12 +17,14 @@ export function Train() {
   const [weakOnly, setWeakOnly] = useState(params.get('weak') === '1');
   const [listId, setListId] = useState(params.get('listId') || '');
   const [lists, setLists] = useState<WordList[]>([]);
+  const [premium, setPremium] = useState<PremiumStatus | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     get<{ lists: WordList[] }>('/lists').then((d) => setLists(d.lists)).catch(() => {});
+    get<PremiumStatus>('/premium').then(setPremium).catch(() => {});
   }, []);
 
   const start = async () => {
@@ -60,6 +62,15 @@ export function Train() {
       <div className="animate-fade-up">
         <h1 className="text-2xl font-extrabold">Neue Runde</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">Wähle Modus, Niveau und Umfang.</p>
+        {premium && !premium.isPremium && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm dark:border-amber-500/30 dark:bg-amber-500/10">
+            <span>📊 Heute: <strong>{premium.dailyUsed}/{premium.dailyLimit}</strong> Gratis-Runden</span>
+            <Link to="/premium" className="ml-auto font-bold text-amber-700 underline decoration-amber-400 underline-offset-2 hover:text-amber-900 dark:text-amber-300">⭐ Premium holen</Link>
+          </div>
+        )}
+        {premium?.isPremium && (
+          <p className="mt-2 text-xs font-semibold text-amber-600 dark:text-amber-400">👑 Premium: unbegrenzte Runden</p>
+        )}
       </div>
 
       {/* Modus */}

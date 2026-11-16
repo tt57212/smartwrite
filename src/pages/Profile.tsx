@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../context';
 import { del, get, patch, post } from '../lib/api';
 import type { Profile } from '../lib/types';
@@ -151,6 +152,24 @@ export function ProfilePage() {
         <h2 className="mb-1 font-bold">Audio & Stimme</h2>
         <p className="mb-4 text-sm text-slate-500">Wähle eine deutsche Stimme und das Tempo für die Übungen.</p>
         <VoicePicker />
+      </Card>
+
+      {/* Premium-Status */}
+      <Card className={`p-6 ${me.isPremium ? 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 dark:border-emerald-500/30 dark:from-emerald-500/10 dark:to-teal-500/10' : 'border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/10'}`}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{me.isPremium ? '👑' : '⭐'}</span>
+            <div>
+              <p className="font-bold">{me.isPremium ? 'Premium aktiv' : 'SmartWrite Premium'}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                {me.isPremium
+                  ? `Unbegrenzte Runden${me.premiumUntil ? ` · bis ${new Date(me.premiumUntil).toLocaleDateString('de-DE')}` : ''}`
+                  : '10 Runden/Tag gratis · Unlimited für 4,99 €/Monat'}
+              </p>
+            </div>
+          </div>
+          <Link to="/premium"><Button variant={me.isPremium ? 'secondary' : 'primary'}>{me.isPremium ? 'Details' : 'Jetzt upgraden'}</Button></Link>
+        </div>
       </Card>
 
       {/* Konto */}

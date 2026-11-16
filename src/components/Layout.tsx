@@ -42,14 +42,19 @@ export function Layout() {
               to={n.to}
               end={n.end}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
-                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                `flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                  n.to === '/premium' && !me.isPremium
+                    ? isActive
+                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                      : 'bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 hover:from-amber-100 dark:from-amber-500/10 dark:to-orange-500/10 dark:text-amber-300'
+                    : isActive
+                      ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
+                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
                 }`
               }
             >
-              <span className="text-base">{n.icon}</span> {n.label}
+              <span className="flex items-center gap-3"><span>{n.icon}</span> {n.label}</span>
+              {n.to === '/premium' && !me.isPremium && <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-black text-white">PRO</span>}
             </NavLink>
           ))}
           {me.isAdmin && (
