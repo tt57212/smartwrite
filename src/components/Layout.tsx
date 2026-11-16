@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useApp } from '../context';
 import { Avatar } from './Avatar';
+import { Tour } from './Tour';
 import { get } from '../lib/api';
 import type { Profile } from '../lib/types';
 
@@ -110,6 +111,7 @@ export function Layout() {
           <Outlet />
         </div>
       </main>
+      <Tour />
 
       {/* Mobile Bottom-Nav */}
       <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-slate-200 bg-white/95 py-2 backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/95">

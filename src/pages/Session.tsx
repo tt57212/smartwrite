@@ -11,6 +11,7 @@ interface RoundData {
   round: { id: string; mode: string; config: string; status: string };
   items: { id: number; prompt: string; answer: string; sort_order: number }[];
   answers: Record<number, { given: string; verdict: string }>;
+  result?: RoundResult | null;
 }
 
 const MODE_LABEL: Record<string, string> = {
@@ -40,10 +41,7 @@ export function Session() {
     if (!roundId) return;
     get<RoundData>(`/rounds/${roundId}`).then((d) => {
       setData(d);
-      if (d.round.status === 'finished') {
-        // Bereits abgegebene Runde: Ergebnisse neu laden
-        setResult(null);
-      }
+      if (d.result) setResult(d.result);
     }).catch((e) => setError(e.message));
     return () => stopSpeaking();
   }, [roundId]);

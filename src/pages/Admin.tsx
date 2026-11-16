@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useApp } from '../context';
-import { del, get, patch, post } from '../lib/api';
+import { del, get, patch, post, put } from '../lib/api';
 import { Badge, Button, Card, ErrorBox, Input, Modal, Select, Spinner } from '../components/ui';
 
 interface AdminUser { id: string; email: string; role: string; created_at: string; premium_until: string | null; profile_count: number; total_xp: number }
@@ -200,6 +200,69 @@ function NewUserModal({ open, onClose, onCreated }: { open: boolean; onClose: ()
   );
 }
 
+interface PlanConfig { label: string; days: number; cents: number; seats?: number; enabled?: boolean }
+
+function PlanEditor() {
+  const [plans, setPlans] = useState<Record<string, PlanConfig>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => {
+    get<{ plans: Record<string, PlanConfig> }>('/admin/premium-config')
+      .then((d) => setPlans(d.plans)).finally(() => setLoading(false));
+  }, []);
+
+  const set = (key: string, field: keyof PlanConfig, value: string | number | boolean) =>
+    setPlans((p) => ({ ...p, [key]: { ...p[key], [field]: value } }));
+
+  const save = async () => {
+    setSaving(true); setMsg('');
+    try {
+      await put('/admin/premium-config', { plans });
+      setMsg('Tarife gespeichert.');
+    } catch (e) { setMsg(e instanceof Error ? e.message : 'Fehler'); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <Spinner className="h-6 w-6" />;
+  const keys = Object.keys(plans);
+  if (!keys.length) return null;
+
+  return (
+    <Card className="p-5">
+      <h3 className="mb-1 font-bold">💰 Tarife & Preise</h3>
+      <p className="mb-4 text-xs text-slate-500">Hier kannst du Preise, Laufzeiten, Team-Plätze und die Aktivierung der Tarife anpassen. Änderungen gelten sofort für neue Käufe.</p>
+      <div className="space-y-3">
+        {keys.map((key) => {
+          const p = plans[key];
+          return (
+            <div key={key} className="grid grid-cols-2 items-center gap-2 rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/60 sm:grid-cols-6">
+              <span className="font-mono text-xs font-bold text-slate-500">{key}</span>
+              <input className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900" value={p.label}
+                onChange={(e) => set(key, 'label', e.target.value)} placeholder="Name" />
+              <label className="flex items-center gap-1 text-xs text-slate-500">€<input type="number" step="0.01" className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900"
+                value={(p.cents / 100).toFixed(2)} onChange={(e) => set(key, 'cents', Math.round(parseFloat(e.target.value || '0') * 100))} /></label>
+              <label className="flex items-center gap-1 text-xs text-slate-500">Tage<input type="number" className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900"
+                value={p.days} onChange={(e) => set(key, 'days', parseInt(e.target.value) || 30)} /></label>
+              <label className="flex items-center gap-1 text-xs text-slate-500">Plätze<input type="number" className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900"
+                value={p.seats ?? ''} onChange={(e) => set(key, 'seats', parseInt(e.target.value) || 0)} /></label>
+              <label className="flex items-center gap-1.5 text-xs font-medium">
+                <input type="checkbox" checked={p.enabled !== false} onChange={(e) => set(key, 'enabled', e.target.checked)} className="accent-indigo-600" />
+                aktiv
+              </label>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-4 flex items-center gap-3">
+        <Button onClick={() => void save()} disabled={saving} className="px-5 py-2 text-sm">{saving ? 'Speichern…' : 'Tarife speichern'}</Button>
+        {msg && <span className="text-sm font-medium text-emerald-600">{msg}</span>}
+      </div>
+    </Card>
+  );
+}
+
 function PremiumAdmin() {
   const [requests, setRequests] = useState<PremiumRequest[]>([]);
   const [filter, setFilter] = useState('pending');
@@ -214,11 +277,12 @@ function PremiumAdmin() {
     load();
   };
 
-  const planLabel = (p: string) => p === 'yearly' ? 'Premium Jahr' : 'Premium Monat';
+  const planLabel = (p: string) => p === 'yearly' ? 'Premium Jahr' : p === 'business' ? 'Premium Firma' : 'Premium Monat';
 
   if (loading) return <Spinner className="h-8 w-8" />;
   return (
     <div className="space-y-4">
+      <PlanEditor />
       <div className="flex gap-2">
         {['pending', 'approved', 'rejected', 'all'].map((f) => (
           <button key={f} onClick={() => setFilter(f)}

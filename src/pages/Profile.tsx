@@ -5,7 +5,7 @@ import { del, get, patch, post } from '../lib/api';
 import type { Profile } from '../lib/types';
 import { Avatar } from '../components/Avatar';
 import { VoicePicker } from '../components/VoicePicker';
-import { Badge, Button, Card, ErrorBox, Input, Modal, Select, Spinner } from '../components/ui';
+import { Badge, Button, Card, ErrorBox, Input, Modal, Select, Spinner, Textarea } from '../components/ui';
 
 const AVATAR_OPTIONS = ['star', 'rocket', 'bot', 'wand', 'cat', 'dog', 'panda', 'alien'];
 const AVATAR_ICONS: Record<string, string> = { star: '⭐', rocket: '🚀', bot: '🤖', wand: '🪄', cat: '🐱', dog: '🐶', panda: '🐼', alien: '👽' };
@@ -19,6 +19,8 @@ export function ProfilePage() {
   const [color, setColor] = useState('indigo');
   const [goal, setGoal] = useState(100);
   const [weeklyGoal, setWeeklyGoal] = useState(500);
+  const [aiInstructions, setAiInstructions] = useState('');
+  const [aiMsg, setAiMsg] = useState('');
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -32,6 +34,7 @@ export function ProfilePage() {
       setColor(me.profile.color);
       setGoal(me.profile.daily_goal_xp);
       setWeeklyGoal(me.profile.weekly_goal_xp ?? 500);
+      setAiInstructions(typeof me.user.settings?.ai_instructions === 'string' ? me.user.settings.ai_instructions : '');
     }
     get<{ profiles: Profile[] }>('/profiles').then((d) => setProfiles(d.profiles)).catch(() => {});
   }, [me?.profile.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -158,8 +161,39 @@ export function ProfilePage() {
       {/* Audio & Stimme */}
       <Card className="p-6">
         <h2 className="mb-1 font-bold">Audio & Stimme</h2>
-        <p className="mb-4 text-sm text-slate-500">Wähle eine deutsche Stimme und das Tempo für die Übungen.</p>
+        <p className="mb-4 text-sm text-slate-500">Wähle eine deutsche Stimme und passe Tempo, Stimmlage und Lautstärke an.</p>
         <VoicePicker />
+      </Card>
+
+      {/* KI-Anweisungen */}
+      <Card className="p-6">
+        <h2 className="mb-1 font-bold">🤖 KI-Anweisungen</h2>
+        <p className="mb-4 text-sm text-slate-500">
+          Gib der KI eigene Anweisungen – z. B. Themen, Altersgruppe oder besondere Regeln. Wird bei „KI-Übungen generieren" und der Fehleranalyse berücksichtigt.
+        </p>
+        <Textarea
+          value={aiInstructions}
+          onChange={(e) => setAiInstructions(e.target.value)}
+          rows={4}
+          maxLength={1000}
+          placeholder="z. B.: Generiere Übungen nur zu Tieren und zaubere. Verwende einfache Sätze für 8-Jährige."
+        />
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-xs text-slate-400">{aiInstructions.length}/1000 Zeichen</span>
+          <Button
+            variant="secondary"
+            className="px-4 py-2 text-sm"
+            onClick={async () => {
+              setAiMsg('');
+              try {
+                await patch('/me', { settings: { ai_instructions: aiInstructions.trim() } });
+                setAiMsg('Gespeichert.');
+                await refresh();
+              } catch (e) { setAiMsg(e instanceof Error ? e.message : 'Fehler'); }
+            }}
+          >Speichern</Button>
+        </div>
+        {aiMsg && <p className="mt-2 text-sm font-medium text-emerald-600">{aiMsg}</p>}
       </Card>
 
       {/* Premium-Status */}

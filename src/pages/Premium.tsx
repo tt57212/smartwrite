@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { get, post } from '../lib/api';
+import { get, post, del } from '../lib/api';
 import type { PremiumStatus } from '../lib/types';
 import { useApp } from '../context';
 import { Badge, Button, Card, ErrorBox, Spinner, Textarea } from '../components/ui';
@@ -14,6 +14,9 @@ export function Premium() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [seatEmail, setSeatEmail] = useState('');
+  const [seatBusy, setSeatBusy] = useState(false);
+  const [seatMsg, setSeatMsg] = useState('');
 
   const [params, setParams] = useSearchParams();
   const [paidMsg, setPaidMsg] = useState('');
@@ -61,6 +64,21 @@ export function Premium() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Fehler'); setCheckoutBusy(false); }
   };
 
+  const addSeat = async () => {
+    setSeatBusy(true); setSeatMsg('');
+    try {
+      await post('/premium/seats', { email: seatEmail.trim() });
+      setSeatEmail(''); setSeatMsg('Team-Mitglied hinzugefügt!');
+      await load();
+    } catch (e) { setSeatMsg(e instanceof Error ? e.message : 'Fehler'); }
+    finally { setSeatBusy(false); }
+  };
+
+  const removeSeat = async (id: string) => {
+    await del(`/premium/seats/${id}`);
+    await load();
+  };
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="text-center">
@@ -98,7 +116,7 @@ export function Premium() {
               >
                 <div className="flex items-center justify-between">
                   <p className="font-bold">{p.label}</p>
-                  {p.days === 365 && <Badge tone="violet"> Sparen </Badge>}
+                  {p.days === 365 && <Badge tone="violet"> {p.seats ? `Team · ${p.seats} Plätze` : ' Sparen '} </Badge>}
                 </div>
                 <p className="mt-2 text-3xl font-black">{p.price}<span className="text-sm font-medium text-slate-400"> inkl. MwSt.</span></p>
                 <p className="mt-1 text-xs text-slate-500">{p.days === 365 ? '≈ 4,17 € pro Monat' : 'Jederzeit kündbar'}</p>
@@ -191,6 +209,46 @@ export function Premium() {
             </Card>
           )}
         </>
+      )}
+
+      {/* Firmen-Team-Verwaltung */}
+      {data.isBusiness && (
+        <Card className="p-6">
+          <h2 className="mb-1 font-bold">👥 Firmen-Team</h2>
+          <p className="mb-4 text-sm text-slate-500">
+            Dein Firmen-Premium gilt für dich und bis zu <strong>{data.seatLimit ?? 10}</strong> Team-Mitglieder.
+            Füge Accounts per E-Mail hinzu – sie erhalten automatisch Premium.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={seatEmail}
+              onChange={(e) => setSeatEmail(e.target.value)}
+              placeholder="E-Mail des Team-Mitglieds"
+              className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500 dark:border-slate-600 dark:bg-slate-900/60"
+            />
+            <Button onClick={addSeat} disabled={seatBusy || !seatEmail.includes('@')} className="px-5 py-2.5 text-sm">
+              {seatBusy ? '…' : 'Hinzufügen'}
+            </Button>
+          </div>
+          {seatMsg && <p className={`mt-2 text-sm font-medium ${seatMsg.includes('Fehler') || seatMsg.includes('nicht') || seatMsg.includes('Maximal') || seatMsg.includes('bereits') || seatMsg.includes('Kein') ? 'text-red-500' : 'text-emerald-600'}`}>{seatMsg}</p>}
+          {(data.seats?.length ?? 0) > 0 && (
+            <div className="mt-4 space-y-2">
+              {data.seats!.map((s) => (
+                <div key={s.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
+                  <div>
+                    <p className="text-sm font-semibold">{s.member_name || s.member_email}</p>
+                    <p className="text-xs text-slate-500">{s.member_email} · seit {new Date(s.created_at).toLocaleDateString('de-DE')}</p>
+                  </div>
+                  <button onClick={() => void removeSeat(s.id)} className="text-xs font-semibold text-red-500 hover:underline">Entfernen</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {(data.seats?.length ?? 0) === 0 && (
+            <p className="mt-3 text-xs text-slate-400">Noch keine Team-Mitglieder. Das Team-Mitglied muss sich zuerst kostenlos registrieren.</p>
+          )}
+        </Card>
       )}
 
       {/* Tageslimit-Info */}

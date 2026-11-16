@@ -351,15 +351,40 @@ app.get('/rounds/:id', async (c) => {
     'SELECT id, prompt, answer, sort_order FROM round_items WHERE round_id = ? ORDER BY sort_order'
   ).bind(id).all<{ id: number; prompt: string; answer: string; sort_order: number }>();
   let answers: Record<number, { given: string; verdict: string; points: number; max_points: number; feedback: string | null }> = {};
+  let result: Record<string, unknown> | null = null;
   if (round.status === 'finished') {
     const { results: ans } = await c.env.DB.prepare(
-      'SELECT item_id, given, verdict, points, max_points, feedback FROM answers WHERE round_id = ?'
-    ).bind(id).all();
-    for (const a of ans as { item_id: number; given: string; verdict: string; points: number; max_points: number; feedback: string | null }[]) {
+      'SELECT a.item_id, a.given, a.verdict, a.points, a.max_points, a.feedback, i.prompt, i.answer FROM answers a JOIN round_items i ON i.id = a.item_id WHERE a.round_id = ? ORDER BY i.sort_order'
+    ).bind(id).all<{
+      item_id: number; given: string; verdict: Verdict; points: number; max_points: number;
+      feedback: string | null; prompt: string; answer: string;
+    }>();
+    for (const a of ans) {
       answers[a.item_id] = a;
     }
+    const score = ans.reduce((s, a) => s + a.points, 0);
+    const maxScore = ans.reduce((s, a) => s + a.max_points, 0);
+    const percent = maxScore > 0 ? Math.round((score / maxScore) * 1000) / 10 : 0;
+    const grade = gradeForPercent(percent);
+    const { level } = levelForXp(auth.profile.xp);
+    result = {
+      roundId: id,
+      mode: round.mode,
+      results: ans.map((a) => ({
+        itemId: a.item_id, prompt: a.prompt, expected: a.answer, given: a.given,
+        verdict: a.verdict, verdictLabel: verdictLabel(a.verdict),
+        points: a.points, maxPoints: a.max_points, feedback: a.feedback || '',
+      })),
+      score, maxScore, percent, grade,
+      correctCount: ans.filter((a) => a.verdict === 'correct').length,
+      totalCount: ans.length,
+      xpGained: score,
+      level: { level, xp: auth.profile.xp },
+      streak: auth.profile.streak,
+      unlockedRewards: [],
+    };
   }
-  return c.json({ round, items, answers });
+  return c.json({ round, items, answers, result });
 });
 
 app.post('/rounds/:id/submit', async (c) => {
@@ -791,7 +816,11 @@ app.post('/ai/generate', async (c) => {
   ).bind(auth.profile.id).all<{ display: string }>();
   const focusWords = [...(focus || []), ...weak.map((w) => w.display)].slice(0, 15);
 
-  let generated = await generateExercises(c.env, { difficulty: diff, count: n, focus: focusWords });
+  // Persönliche KI-Anweisungen des Nutzers
+  const aiInstructions = typeof auth.user.settings?.ai_instructions === 'string'
+    ? auth.user.settings.ai_instructions.slice(0, 1000) : undefined;
+
+  let generated = await generateExercises(c.env, { difficulty: diff, count: n, focus: focusWords, instructions: aiInstructions });
   let source: 'ai' | 'builtin' = 'ai';
 
   if (!generated) {
@@ -830,8 +859,10 @@ app.post('/ai/analyze', async (c) => {
     ? Math.round((auth.profile.grade_sum / auth.profile.grade_count) * 10) / 10 : null;
   const { level } = levelForXp(auth.profile.xp);
 
+  const aiInstructions = typeof auth.user.settings?.ai_instructions === 'string'
+    ? auth.user.settings.ai_instructions.slice(0, 1000) : undefined;
   const aiResult = await analyzeErrors(env, {
-    name: auth.profile.name, mistakes: mistakeList, avgGrade, level,
+    name: auth.profile.name, mistakes: mistakeList, avgGrade, level, instructions: aiInstructions,
   });
   if (aiResult) return c.json({ source: 'ai', ...aiResult });
 
@@ -853,41 +884,128 @@ app.post('/ai/analyze', async (c) => {
 
 // ================= PREMIUM =================
 
-const PREMIUM_PLANS: Record<string, { label: string; days: number; cents: number }> = {
+// Tarife sind admin-editierbar (app_settings.premium_plans im DB)
+const DEFAULT_PLANS: Record<string, { label: string; days: number; cents: number; seats?: number }> = {
   monthly: { label: 'Premium Monat', days: 30, cents: 499 },
   yearly: { label: 'Premium Jahr', days: 365, cents: 4999 },
+  business: { label: 'Premium Firma', days: 365, cents: 10000, seats: 10 },
 };
+
+async function getPlans(env: Env): Promise<Record<string, { label: string; days: number; cents: number; seats?: number }>> {
+  try {
+    const row = await env.DB.prepare("SELECT value FROM app_settings WHERE key = 'premium_plans'").first<{ value: string }>();
+    if (!row) return DEFAULT_PLANS;
+    const overrides = JSON.parse(row.value) as Record<string, Partial<{ label: string; days: number; cents: number; seats: number; enabled: boolean }>>;
+    const merged: typeof DEFAULT_PLANS = { ...DEFAULT_PLANS };
+    for (const [k, v] of Object.entries(overrides)) {
+      if (v.enabled === false) { delete merged[k]; continue; }
+      if (merged[k]) merged[k] = { ...merged[k], ...v };
+      else merged[k] = { label: k, days: 30, cents: 0, seats: 0, ...v } as never;
+    }
+    return merged;
+  } catch {
+    return DEFAULT_PLANS;
+  }
+}
+
 const PREMIUM_IBAN = 'DE91 2004 1188 0418 0949 00';
 const PREMIUM_PRICE = '4,99 € / Monat oder 49,99 € / Jahr';
+
+function isBusinessOwner(user: { settings?: Record<string, unknown> } | null | undefined): boolean {
+  return !!(user?.settings && (user.settings as Record<string, unknown>).business_premium);
+}
 
 app.get('/premium', async (c) => {
   const auth = await requireAuth(c);
   const env = c.env;
   const premium = isPremiumUser(auth.user);
+  const plans = await getPlans(env);
   const today = await env.DB.prepare(
     "SELECT COUNT(*) AS n FROM rounds WHERE profile_id = ? AND status='finished' AND date(finished_at) = date('now')"
   ).bind(auth.profile.id).first<{ n: number }>();
   const { results: requests } = await env.DB.prepare(
     'SELECT id, plan, amount_cents, status, note, created_at, decided_at FROM premium_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 10'
   ).bind(auth.user.id).all();
+
+  // Firmen-Tarif: Seats des Inhabers
+  let seats: { id: string; member_email: string; member_name: string | null; created_at: string }[] = [];
+  let seatLimit = 0;
+  if (isBusinessOwner(auth.user)) {
+    const bp = plans.business;
+    seatLimit = bp?.seats ?? 10;
+    const { results } = await env.DB.prepare(
+      `SELECT s.id, s.member_email, s.created_at, p.name AS member_name
+       FROM premium_seats s LEFT JOIN profiles p ON p.user_id = s.member_id
+       WHERE s.owner_id = ? ORDER BY s.created_at DESC`
+    ).bind(auth.user.id).all<{ id: string; member_email: string; member_name: string | null; created_at: string }>();
+    seats = results;
+  }
+
   return c.json({
     isPremium: premium,
     premiumUntil: auth.user.premium_until || null,
+    isBusiness: isBusinessOwner(auth.user) && premium,
+    seats, seatLimit,
     dailyUsed: today?.n || 0,
     dailyLimit: premium ? null : 10,
     iban: PREMIUM_IBAN,
     price: PREMIUM_PRICE,
-    plans: Object.entries(PREMIUM_PLANS).map(([key, p]) => ({ key, ...p, price: (p.cents / 100).toFixed(2).replace('.', ',') + ' €' })),
+    plans: Object.entries(plans).map(([key, p]) => ({ key, ...p, price: (p.cents / 100).toFixed(2).replace('.', ',') + ' €' })),
     cardPayment: stripeConfigured(env),
     requests,
   });
+});
+
+// Firmen-Tarif: Team-Mitglieder mit Premium ausstatten
+app.post('/premium/seats', async (c) => {
+  const auth = await requireAuth(c);
+  const env = c.env;
+  if (!isBusinessOwner(auth.user) || !isPremiumUser(auth.user)) {
+    return jsonError(c, 'Firmen-Premium erforderlich.', 403);
+  }
+  const plans = await getPlans(env);
+  const seatLimit = plans.business?.seats ?? 10;
+  const { results: existing } = await env.DB.prepare('SELECT COUNT(*) AS n FROM premium_seats WHERE owner_id = ?')
+    .bind(auth.user.id).all<{ n: number }>();
+  if ((existing[0]?.n || 0) >= seatLimit) return jsonError(c, `Maximal ${seatLimit} Team-Plätze.`);
+
+  const { email } = await c.req.json<{ email?: string }>();
+  const mail = (email || '').trim().toLowerCase();
+  if (!mail || !mail.includes('@')) return jsonError(c, 'Ungültige E-Mail.');
+  if (mail === auth.user.email.toLowerCase()) return jsonError(c, 'Das bist du selbst.');
+
+  const member = await env.DB.prepare('SELECT id, email, premium_until FROM users WHERE email = ?')
+    .bind(mail).first<{ id: string; email: string; premium_until: string | null }>();
+  if (!member) return jsonError(c, 'Kein Account mit dieser E-Mail gefunden. Die Person muss sich zuerst registrieren.');
+
+  const dup = await env.DB.prepare('SELECT id FROM premium_seats WHERE owner_id = ? AND member_id = ?')
+    .bind(auth.user.id, member.id).first();
+  if (dup) return jsonError(c, 'Diese Person ist bereits im Team.');
+
+  // Mitglied bekommt Premium bis zum Ablauf des Inhaber-Abos
+  const ownerUntil = auth.user.premium_until || new Date(Date.now() + 365 * 86400e3).toISOString().slice(0, 19).replace('T', ' ');
+  await env.DB.prepare(
+    `UPDATE users SET premium_until = MAX(COALESCE(premium_until, ''), ?) WHERE id = ?`
+  ).bind(ownerUntil, member.id).run();
+  await env.DB.prepare('INSERT INTO premium_seats (id, owner_id, member_id, member_email) VALUES (?, ?, ?, ?)')
+    .bind(uid(), auth.user.id, member.id, member.email).run();
+
+  return c.json({ ok: true }, 201);
+});
+
+app.delete('/premium/seats/:id', async (c) => {
+  const auth = await requireAuth(c);
+  const id = c.req.param('id');
+  await c.env.DB.prepare('DELETE FROM premium_seats WHERE id = ? AND owner_id = ?').bind(id, auth.user.id).run();
+  return c.json({ ok: true });
 });
 
 app.post('/premium/request', async (c) => {
   const auth = await requireAuth(c);
   const env = c.env;
   const { plan, note } = await c.req.json<{ plan?: string; note?: string }>();
-  const p = plan ? PREMIUM_PLANS[plan] : undefined;
+  const plans = await getPlans(env);
+  const p = plan ? plans[plan] : undefined;
   if (!p) return jsonError(c, 'Ungültiger Tarif.');
   if (isPremiumUser(auth.user)) return jsonError(c, 'Du hast bereits Premium.');
 
@@ -925,7 +1043,8 @@ app.post('/premium/checkout', async (c) => {
   if (!stripeConfigured(env)) return jsonError(c, 'Online-Zahlung nicht konfiguriert.', 503);
   if (isPremiumUser(auth.user)) return jsonError(c, 'Du hast bereits Premium.');
   const { plan } = await c.req.json<{ plan?: string }>();
-  const p = plan ? PREMIUM_PLANS[plan] : undefined;
+  const plans = await getPlans(env);
+  const p = plan ? plans[plan] : undefined;
   if (!p) return jsonError(c, 'Ungültiger Tarif.');
 
   const base = env.APP_URL || new URL(c.req.url).origin;
@@ -983,8 +1102,9 @@ app.post('/webhooks/stripe', async (c) => {
 
   const meta = event.data?.object?.metadata;
   const userId = meta?.user_id || event.data?.object?.client_reference_id;
-  const plan = meta?.plan && PREMIUM_PLANS[meta.plan] ? meta.plan : 'monthly';
-  const days = PREMIUM_PLANS[plan].days;
+  const plans = await getPlans(env);
+  const plan = meta?.plan && plans[meta.plan] ? meta.plan : 'monthly';
+  const days = plans[plan].days;
   if (!userId) return c.json({ received: true });
 
   await env.DB.prepare(
@@ -993,9 +1113,14 @@ app.post('/webhooks/stripe', async (c) => {
        FROM users WHERE id = ?
      ) WHERE id = ?`
   ).bind(days, userId, userId).run();
+  if (plan === 'business') {
+    await env.DB.prepare(
+      `UPDATE users SET settings = json_set(COALESCE(settings, '{}'), '$.business_premium', json('true')) WHERE id = ?`
+    ).bind(userId).run();
+  }
   await env.DB.prepare(
     "INSERT INTO premium_requests (id, user_id, email, plan, amount_cents, status, note, decided_at, decided_by) VALUES (?, ?, (SELECT email FROM users WHERE id=?), ?, ?, 'approved', 'Stripe-Zahlung', datetime('now'), 'stripe')"
-  ).bind(uid(), userId, userId, plan, PREMIUM_PLANS[plan].cents).run();
+  ).bind(uid(), userId, userId, plan, plans[plan].cents).run();
 
   return c.json({ received: true });
 });
@@ -1051,6 +1176,7 @@ admin.get('/premium', async (c) => {
 
 admin.post('/premium/:id/approve', async (c) => {
   const auth = await requireAdmin(c);
+  const env = c.env;
   const id = c.req.param('id');
   const { days } = await c.req.json<{ days?: number }>();
   const req = await c.env.DB.prepare('SELECT * FROM premium_requests WHERE id = ?')
@@ -1058,7 +1184,8 @@ admin.post('/premium/:id/approve', async (c) => {
   if (!req) return jsonError(c, 'Anfrage nicht gefunden.', 404);
   if (req.status !== 'pending') return jsonError(c, 'Anfrage bereits bearbeitet.', 409);
 
-  const d = days || PREMIUM_PLANS[req.plan]?.days || 30;
+  const plans = await getPlans(env);
+  const d = days || plans[req.plan]?.days || 30;
   // premium_until verlängern (ab heute oder ab bestehender Laufzeit)
   await c.env.DB.prepare(
     `UPDATE users SET premium_until = (
@@ -1066,10 +1193,41 @@ admin.post('/premium/:id/approve', async (c) => {
        FROM users WHERE id = ?
      ) WHERE id = ?`
   ).bind(d, req.user_id, req.user_id).run();
+  if (req.plan === 'business') {
+    await env.DB.prepare(
+      `UPDATE users SET settings = json_set(COALESCE(settings, '{}'), '$.business_premium', json('true')) WHERE id = ?`
+    ).bind(req.user_id).run();
+  }
   await c.env.DB.prepare(
     "UPDATE premium_requests SET status='approved', decided_at=datetime('now'), decided_by=? WHERE id=?"
   ).bind(auth.user.email, id).run();
   return c.json({ ok: true });
+});
+
+// Admin: Premium-Tarife anpassen (Preise, Laufzeit, Team-Plätze, aktivieren/deaktivieren)
+admin.get('/premium-config', async (c) => {
+  const plans = await getPlans(c.env);
+  return c.json({ plans, defaults: DEFAULT_PLANS });
+});
+
+admin.put('/premium-config', async (c) => {
+  const body = await c.req.json<{ plans?: Record<string, { label?: string; days?: number; cents?: number; seats?: number; enabled?: boolean }> }>();
+  if (!body.plans || typeof body.plans !== 'object') return jsonError(c, 'Ungültige Daten.');
+  const clean: Record<string, unknown> = {};
+  for (const [key, p] of Object.entries(body.plans)) {
+    if (!/^[a-z_]+$/.test(key)) continue;
+    clean[key] = {
+      label: String(p.label || key).slice(0, 60),
+      days: Math.min(Math.max(parseInt(String(p.days), 10) || 30, 1), 3650),
+      cents: Math.min(Math.max(parseInt(String(p.cents), 10) || 0, 0), 1000000),
+      seats: p.seats !== undefined ? Math.min(Math.max(parseInt(String(p.seats), 10) || 0, 0), 500) : undefined,
+      enabled: p.enabled !== false,
+    };
+  }
+  await c.env.DB.prepare(
+    "INSERT INTO app_settings (key, value) VALUES ('premium_plans', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+  ).bind(JSON.stringify(clean)).run();
+  return c.json({ ok: true, plans: await getPlans(c.env) });
 });
 
 admin.post('/premium/:id/reject', async (c) => {

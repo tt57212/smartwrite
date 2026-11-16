@@ -45,12 +45,15 @@ export interface Me {
 export interface PremiumStatus {
   isPremium: boolean;
   premiumUntil: string | null;
+  isBusiness?: boolean;
+  seats?: { id: string; member_email: string; member_name: string | null; created_at: string }[];
+  seatLimit?: number;
   dailyUsed: number;
   dailyLimit: number | null;
   iban: string;
   price: string;
   cardPayment?: boolean;
-  plans: { key: string; label: string; days: number; cents: number; price: string }[];
+  plans: { key: string; label: string; days: number; cents: number; seats?: number; price: string }[];
   requests: { id: string; plan: string; amount_cents: number; status: string; note: string; created_at: string; decided_at: string | null }[];
 }
 

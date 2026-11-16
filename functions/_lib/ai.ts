@@ -45,9 +45,10 @@ async function chat(env: Env, messages: ChatMessage[], jsonMode = true): Promise
 /** Generiert deutsche Rechtschreibübungen als JSON. */
 export async function generateExercises(
   env: Env,
-  opts: { difficulty: string; count: number; focus?: string[]; mode?: string }
+  opts: { difficulty: string; count: number; focus?: string[]; mode?: string; instructions?: string }
 ): Promise<{ type: 'word' | 'sentence'; text: string }[] | null> {
   const focus = opts.focus?.length ? `Schwerpunktwörter: ${opts.focus.join(', ')}. ` : '';
+  const custom = opts.instructions ? `\nZusätzliche Anweisungen des Lehrers: ${opts.instructions}` : '';
   const content = await chat(env, [
     {
       role: 'system',
@@ -56,7 +57,7 @@ export async function generateExercises(
     },
     {
       role: 'user',
-      content: `Erstelle ${opts.count} deutsche Rechtschreibübungen auf Niveau "${opts.difficulty}". ${focus}Verwende typische deutsche Rechtschreibfallen (ie/ei, ss/ß, Umlauts, ch). Wörter kurz, Sätze einfach.`,
+      content: `Erstelle ${opts.count} deutsche Rechtschreibübungen auf Niveau "${opts.difficulty}". ${focus}Verwende typische deutsche Rechtschreibfallen (ie/ei, ss/ß, Umlauts, ch). Wörter kurz, Sätze einfach.${custom}`,
     },
   ]);
   if (!content) return null;
@@ -75,7 +76,7 @@ export async function generateExercises(
 /** Erstellt ein persönliches Feedback zu den Fehlern eines Profils. */
 export async function analyzeErrors(
   env: Env,
-  opts: { name: string; mistakes: { word: string; count: number }[]; avgGrade: number | null; level: number }
+  opts: { name: string; mistakes: { word: string; count: number }[]; avgGrade: number | null; level: number; instructions?: string }
 ): Promise<{ summary: string; tips: string[]; recommendation: string } | null> {
   const mistakeText = opts.mistakes.length
     ? opts.mistakes.map((m) => `${m.word} (${m.count}×)`).join(', ')
@@ -90,7 +91,7 @@ export async function analyzeErrors(
       },
       {
         role: 'user',
-        content: `Schüler: ${opts.name}, Level ${opts.level}, Ø Note ${opts.avgGrade ?? 'k. A.'}. Häufigste Fehlerwörter: ${mistakeText}. Gib eine kurze Fehleranalyse, 3 konkrete Tipps und eine Übungsempfehlung.`,
+        content: `Schüler: ${opts.name}, Level ${opts.level}, Ø Note ${opts.avgGrade ?? 'k. A.'}. Häufigste Fehlerwörter: ${mistakeText}. Gib eine kurze Fehleranalyse, 3 konkrete Tipps und eine Übungsempfehlung.${opts.instructions ? `\nZusätzliche Anweisungen des Lehrers: ${opts.instructions}` : ''}`,
       },
     ],
     true
