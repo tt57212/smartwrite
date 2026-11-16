@@ -53,6 +53,11 @@ export function Landing() {
             </ul>
           </div>
           <p className="text-xs text-indigo-200">Kostenlos · Sicher · Auf Deutsch</p>
+          <div className="mt-4 flex gap-4 text-[11px] text-indigo-300">
+            <a href="/datenschutz" className="hover:underline">Datenschutz</a>
+            <a href="/impressum" className="hover:underline">Impressum</a>
+            <a href="/agb" className="hover:underline">AGB</a>
+          </div>
         </div>
 
         {/* Rechte Seite: Formular */}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { get, post } from '../lib/api';
 import type { PremiumStatus } from '../lib/types';
 import { useApp } from '../context';
@@ -13,6 +13,7 @@ export function Premium() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const [params, setParams] = useSearchParams();
   const [paidMsg, setPaidMsg] = useState('');
@@ -99,7 +100,7 @@ export function Premium() {
                   <p className="font-bold">{p.label}</p>
                   {p.days === 365 && <Badge tone="violet"> Sparen </Badge>}
                 </div>
-                <p className="mt-2 text-3xl font-black">{p.price}</p>
+                <p className="mt-2 text-3xl font-black">{p.price}<span className="text-sm font-medium text-slate-400"> inkl. MwSt.</span></p>
                 <p className="mt-1 text-xs text-slate-500">{p.days === 365 ? '≈ 4,17 € pro Monat' : 'Jederzeit kündbar'}</p>
                 <ul className="mt-4 space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
                   <li>✓ Unbegrenzte Runden pro Tag</li>
@@ -110,6 +111,19 @@ export function Premium() {
             ))}
           </div>
 
+          {/* Widerruf-Einwilligung (rechtlich erforderlich für digitale Inhalte) */}
+          <Card className="p-5">
+            <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-700 dark:text-slate-300">
+              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 h-4 w-4 accent-indigo-600" />
+              <span>
+                Ich stimme zu, dass der digitale Inhalt (Premium) <strong>sofort bereitgestellt</strong> wird, und bestätige, dass mein{' '}
+                <Link to="/agb" className="text-indigo-600 underline dark:text-indigo-400">Widerrufsrecht</Link> mit Beginn der Bereitstellung erlischt (§ 356 Abs. 5 BGB).
+                Ich habe die <Link to="/agb" className="text-indigo-600 underline dark:text-indigo-400">AGB</Link> und{' '}
+                <Link to="/datenschutz" className="text-indigo-600 underline dark:text-indigo-400">Datenschutzerklärung</Link> gelesen.
+              </span>
+            </label>
+          </Card>
+
           {/* Sofort-Kauf per Karte (Stripe) */}
           {data.cardPayment && (
             <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-violet-50 p-6 dark:border-indigo-500/30 dark:from-indigo-500/10 dark:to-violet-500/10">
@@ -117,7 +131,7 @@ export function Premium() {
               <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
                 Kartenzahlung über Stripe – Premium wird <strong>automatisch sofort</strong> freigeschaltet.
               </p>
-              <Button onClick={checkout} disabled={checkoutBusy || !!pending} className="w-full py-3">
+              <Button onClick={checkout} disabled={checkoutBusy || !!pending || !agreed} className="w-full py-3">
                 {checkoutBusy ? 'Weiterleitung…' : `💳 Jetzt ${selected?.price} bezahlen`}
               </Button>
             </Card>
@@ -153,7 +167,7 @@ export function Premium() {
               <div className="mt-4 space-y-3">
                 <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Optional: Verwendungszweck / Bemerkung (z. B. Überweisungsdatum)" />
                 {error && <ErrorBox message={error} />}
-                <Button onClick={request} disabled={busy} className="w-full py-3">
+                <Button onClick={request} disabled={busy || !agreed} className="w-full py-3">
                   {busy ? 'Wird gesendet…' : '✓ Ich habe überwiesen'}
                 </Button>
               </div>

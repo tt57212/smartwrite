@@ -13,6 +13,8 @@ import { ProfilePage } from './pages/Profile';
 import { Premium } from './pages/Premium';
 import { Admin } from './pages/Admin';
 import { PrivacyPage } from './pages/Privacy';
+import { ImpressumPage } from './pages/Impressum';
+import { AGBPage } from './pages/AGB';
 import { CookieBanner } from './components/CookieBanner';
 import { Spinner } from './components/ui';
 
@@ -31,6 +33,8 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Landing />} />
           <Route path="/datenschutz" element={<PrivacyPage />} />
+          <Route path="/impressum" element={<ImpressumPage />} />
+          <Route path="/agb" element={<AGBPage />} />
           <Route element={<Guarded />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/train" element={<Train />} />
