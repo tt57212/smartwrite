@@ -27,10 +27,10 @@ export function Layout() {
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 max-lg:hidden">
         <div className="flex items-center gap-2.5 px-5 py-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-lg font-black text-white">S</div>
+          <img src="/via.jpg" alt="via" className="h-10 w-10 rounded-2xl object-cover shadow-md ring-1 ring-slate-200 dark:ring-slate-700" />
           <div>
             <p className="text-base font-extrabold tracking-tight">SmartWrite</p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Schreibtraining</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">by via industries</p>
           </div>
         </div>
 
@@ -74,7 +74,7 @@ export function Layout() {
 
       {/* Mobile Topbar */}
       <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/90">
-        <span className="text-base font-extrabold">SmartWrite</span>
+        <span className="flex items-center gap-2 text-base font-extrabold"><img src="/via.jpg" alt="via" className="h-7 w-7 rounded-lg object-cover" />SmartWrite</span>
         <div className="flex items-center gap-2">
           <ProfileSwitcher compact />
           <ThemeToggle dark={dark} toggle={toggleDark} />

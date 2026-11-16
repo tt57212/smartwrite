@@ -37,8 +37,11 @@ export function Landing() {
         {/* Linke Seite: Marketing */}
         <div className="hidden flex-col justify-between bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 p-10 text-white md:flex">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-2xl font-black backdrop-blur">S</div>
-            <span className="text-xl font-extrabold">SmartWrite</span>
+            <img src="/via.jpg" alt="via" className="h-11 w-11 rounded-2xl object-cover shadow-lg ring-2 ring-white/30" />
+            <div>
+              <span className="text-xl font-extrabold">SmartWrite</span>
+              <p className="text-[11px] text-indigo-200">by via industries</p>
+            </div>
           </div>
           <div>
             <h1 className="text-3xl font-extrabold leading-tight">Rechtschreibung üben,<br />die Spaß macht.</h1>
@@ -54,9 +57,12 @@ export function Landing() {
 
         {/* Rechte Seite: Formular */}
         <div className="p-8 sm:p-10">
-          <div className="mb-6 md:hidden">
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">SmartWrite</h1>
-            <p className="text-sm text-slate-500">Rechtschreibung & Schreiben üben</p>
+          <div className="mb-6 flex items-center gap-3 md:hidden">
+            <img src="/via.jpg" alt="via" className="h-10 w-10 rounded-xl object-cover" />
+            <div>
+              <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">SmartWrite</h1>
+              <p className="text-sm text-slate-500">Rechtschreibung & Schreiben üben</p>
+            </div>
           </div>
 
           <div className="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">

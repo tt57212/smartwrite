@@ -9,6 +9,7 @@ export interface VoiceInfo {
 
 const VOICE_KEY = 'sw_voice';
 const RATE_KEY = 'sw_rate';
+const PITCH_KEY = 'sw_pitch';
 
 let voicesCache: SpeechSynthesisVoice[] = [];
 
@@ -54,6 +55,15 @@ export function setRateSetting(rate: number): void {
   localStorage.setItem(RATE_KEY, String(rate));
 }
 
+export function getPitchSetting(): number {
+  const p = parseFloat(localStorage.getItem(PITCH_KEY) || '');
+  return Number.isFinite(p) ? p : 1;
+}
+
+export function setPitchSetting(pitch: number): void {
+  localStorage.setItem(PITCH_KEY, String(pitch));
+}
+
 function resolveVoice(): SpeechSynthesisVoice | null {
   const all = refreshVoices();
   if (!all.length) return null;
@@ -73,13 +83,13 @@ export function isTTSSupported(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
 }
 
-export function speak(text: string, opts: { rate?: number; onEnd?: () => void } = {}): void {
+export function speak(text: string, opts: { rate?: number; pitch?: number; onEnd?: () => void } = {}): void {
   if (!isTTSSupported()) { opts.onEnd?.(); return; }
   window.speechSynthesis.cancel();
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = 'de-DE';
   utter.rate = opts.rate ?? getRateSetting();
-  utter.pitch = 1;
+  utter.pitch = opts.pitch ?? getPitchSetting();
   const voice = resolveVoice();
   if (voice) {
     utter.voice = voice;
