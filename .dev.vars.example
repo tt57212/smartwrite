@@ -1,0 +1,6 @@
+# Optionale KI-Konfiguration für die lokale Entwicklung (kopieren nach .dev.vars)
+# OpenAI-kompatible API (OpenAI, Azure, Ollama, LM Studio, ...)
+# AI_API_KEY=sk-...
+# AI_BASE_URL=https://api.openai.com/v1
+# AI_MODEL=gpt-4o-mini
+# ADMIN_EMAILS=admin@example.com

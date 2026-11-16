@@ -1,0 +1,19 @@
+name = "smartwrite"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Datenbank: nach `wrangler d1 create smartwrite-db` die database_id eintragen.
+[[d1_databases]]
+binding = "DB"
+database_name = "smartwrite-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+# Admin-E-Mails: Bei Login/Registrierung mit diesen Adressen wird automatisch die Admin-Rolle vergeben.
+[vars]
+ADMIN_EMAILS = "via.industries.support@gmail.com,Vincenttelsen@gmail.com"
+# Optionale KI-Konfiguration (OpenAI-kompatible API). Ohne Schlüssel nutzt die App den eingebauten Generator.
+# AI_PROVIDER = "openai-compatible"
+# AI_BASE_URL = "https://api.openai.com/v1"
+# AI_MODEL = "gpt-4o-mini"

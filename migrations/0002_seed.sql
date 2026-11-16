@@ -1,0 +1,181 @@
+-- Seed: Schwierigkeitsstufen, Belohnungen, Übungsinhalte
+
+INSERT OR IGNORE INTO difficulty_levels (key, label, description, sort_order) VALUES
+  ('anfaenger', 'Anfänger', 'Kurze, einfache Wörter für den Einstieg', 1),
+  ('leicht', 'Leicht', 'Häufige Wörter und einfache Sätze', 2),
+  ('mittel', 'Mittel', 'Typische Stolperfallen der deutschen Rechtschreibung', 3),
+  ('schwer', 'Schwer', 'Längere Wörter, Fremdwörter und Ausnahmen', 4),
+  ('experte', 'Experte', 'Anspruchsvolle Wörter und komplexe Texte', 5);
+
+INSERT OR IGNORE INTO rewards (id, name, description, icon, condition_type, condition_value, sort_order) VALUES
+  ('first_round', 'Erste Runde', 'Die erste Übung abgeschlossen', 'target', 'rounds', 1, 1),
+  ('ten_rounds', 'Übungsfan', '10 Runden abgeschlossen', 'flame', 'rounds', 10, 2),
+  ('fifty_rounds', 'Schreibprofi', '50 Runden abgeschlossen', 'medal', 'rounds', 50, 3),
+  ('xp_500', 'Wortschatz-Sammler', '500 XP gesammelt', 'star', 'xp', 500, 4),
+  ('xp_2000', 'Rechtschreib-Ass', '2000 XP gesammelt', 'crown', 'xp', 2000, 5),
+  ('streak_3', 'Drei-Tage-Serie', '3 Tage in Folge gelernt', 'zap', 'streak', 3, 6),
+  ('streak_7', 'Wochenkrieger', '7 Tage in Folge gelernt', 'calendar', 'streak', 7, 7),
+  ('streak_30', 'Monatsmeister', '30 Tage in Folge gelernt', 'trophy', 'streak', 30, 8),
+  ('level_5', 'Level 5 erreicht', 'Fünf Level aufgestiegen', 'badge', 'level', 5, 9),
+  ('level_10', 'Rechtschreib-Legende', 'Level 10 erreicht', 'gem', 'level', 10, 10),
+  ('perfect', 'Perfekte Runde', 'Eine Runde mit 100 % abgeschlossen', 'sparkles', 'grade', 100, 11),
+  ('avatar_space', 'Avatar: Astronaut', 'Neues Profilbild freigeschaltet', 'rocket', 'xp', 250, 12),
+  ('avatar_robot', 'Avatar: Roboter', 'Neues Profilbild freigeschaltet', 'bot', 'xp', 750, 13),
+  ('avatar_wizard', 'Avatar: Zauberer', 'Neues Profilbild freigeschaltet', 'wand', 'xp', 1500, 14),
+  ('theme_night', 'Design: Nachtblau', 'Neuer Hintergrund freigeschaltet', 'moon', 'streak', 5, 15),
+  ('theme_sunset', 'Design: Sonnenuntergang', 'Neuer Hintergrund freigeschaltet', 'sunset', 'xp', 1000, 16);
+
+-- Wörter: Anfänger
+INSERT OR IGNORE INTO content_items (type, text, difficulty, category) VALUES
+  ('word','Haus','anfaenger','allgemein'),('word','Baum','anfaenger','allgemein'),
+  ('word','Tag','anfaenger','allgemein'),('word','Hand','anfaenger','allgemein'),
+  ('word','Wasser','anfaenger','allgemein'),('word','Essen','anfaenger','allgemein'),
+  ('word','Karte','anfaenger','allgemein'),('word','Schule','anfaenger','allgemein'),
+  ('word','Freund','anfaenger','allgemein'),('word','Buch','anfaenger','allgemein'),
+  ('word','Fenster','anfaenger','allgemein'),('word','Licht','anfaenger','allgemein'),
+  ('word','Mutter','anfaenger','allgemein'),('word','Vater','anfaenger','allgemein'),
+  ('word','Bruder','anfaenger','allgemein'),('word','Schwester','anfaenger','allgemein'),
+  ('word','Kind','anfaenger','allgemein'),('word','Familie','anfaenger','allgemein'),
+  ('word','Zeit','anfaenger','allgemein'),('word','Leute','anfaenger','allgemein'),
+  ('word','Tür','anfaenger','umlaute'),('word','Füße','anfaenger','umlaute'),
+  ('word','Mücke','anfaenger','umlaute'),('word','Öl','anfaenger','umlaute'),
+  ('word','grün','anfaenger','umlaute'),('word','schön','anfaenger','umlaute'),
+  ('word','groß','anfaenger','ss-ß'),('word','Straße','anfaenger','ss-ß'),
+  ('word','Fuß','anfaenger','ss-ß'),('word','heißen','anfaenger','ss-ß'),
+  ('word','weiß','anfaenger','ss-ß'),('word','nuss','anfaenger','ss-ß');
+
+-- Wörter: Leicht
+INSERT OR IGNORE INTO content_items (type, text, difficulty, category) VALUES
+  ('word','wieder','leicht','allgemein'),('word','Fehler','leicht','allgemein'),
+  ('word','lernen','leicht','allgemein'),('word','schreiben','leicht','allgemein'),
+  ('word','sprechen','leicht','allgemein'),('word','denken','leicht','allgemein'),
+  ('word','bringen','leicht','allgemein'),('word','bekommen','leicht','allgemein'),
+  ('word','verstehen','leicht','allgemein'),('word','erzählen','leicht','allgemein'),
+  ('word','antworten','leicht','allgemein'),('word','fragen','leicht','allgemein'),
+  ('word','lesen','leicht','allgemein'),('word','hören','leicht','allgemein'),
+  ('word','sehen','leicht','allgemein'),('word','trinken','leicht','allgemein'),
+  ('word','schlafen','leicht','allgemein'),('word','aufstehen','leicht','allgemein'),
+  ('word','anziehen','leicht','allgemein'),('word','waschen','leicht','allgemein'),
+  ('word','putzen','leicht','allgemein'),('word','kochen','leicht','allgemein'),
+  ('word','backen','leicht','allgemein'),('word','kaufen','leicht','allgemein'),
+  ('word','bezahlen','leicht','allgemein'),('word','schenken','leicht','allgemein'),
+  ('word','gewinnen','leicht','allgemein'),('word','verlieren','leicht','allgemein'),
+  ('word','siegen','leicht','allgemein'),('word','kämpfen','leicht','umlaute'),
+  ('word','Mädchen','leicht','umlaute'),('word','Brötchen','leicht','umlaute'),
+  ('word','Löffel','leicht','umlaute'),('word','Körper','leicht','umlaute'),
+  ('word','Hände','leicht','umlaute'),('word','Städte','leicht','umlaute'),
+  ('word','Bäume','leicht','umlaute'),('word','Möbel','leicht','umlaute');
+
+-- Wörter: Mittel (Ei/ie, ch, ss/ß, Doppelkonsonanten)
+INSERT OR IGNORE INTO content_items (type, text, difficulty, category) VALUES
+  ('word','mein','mittel','ei-ie'),('word','dein','mittel','ei-ie'),
+  ('word','sein','mittel','ei-ie'),('word','kein','mittel','ei-ie'),
+  ('word','klein','mittel','ei-ie'),('word','nein','mittel','ei-ie'),
+  ('word','Wein','mittel','ei-ie'),('word','Bein','mittel','ei-ie'),
+  ('word','breit','mittel','ei-ie'),('word','leicht','mittel','ei-ie'),
+  ('word','frei','mittel','ei-ie'),('word','drei','mittel','ei-ie'),
+  ('word','zwei','mittel','ei-ie'),('word','Ei','mittel','ei-ie'),
+  ('word','Reis','mittel','ei-ie'),('word','Mais','mittel','ei-ie'),
+  ('word','Preis','mittel','ei-ie'),('word','Arbeit','mittel','ei-ie'),
+  ('word','Buch','mittel','ch'),('word','Loch','mittel','ch'),
+  ('word','Dach','mittel','ch'),('word','nicht','mittel','ch'),
+  ('word','Nacht','mittel','ch'),('word','recht','mittel','ch'),
+  ('word','schlecht','mittel','ch'),('word','Macht','mittel','ch'),
+  ('word','Suche','mittel','ch'),('word','Woche','mittel','ch'),
+  ('word','Sprache','mittel','ch'),('word','Sprichwort','mittel','ch'),
+  ('word','Ich','mittel','ch'),('word','dich','mittel','ch'),
+  ('word','mich','mittel','ch'),('word','sich','mittel','ch'),
+  ('word','Groß','mittel','ss-ß'),('word','Maß','mittel','ss-ß'),
+  ('word','Spaß','mittel','ss-ß'),('word','heiß','mittel','ss-ß'),
+  ('word','Fluss','mittel','ss-ß'),('word','Kuss','mittel','ss-ß'),
+  ('word','Hass','mittel','ss-ß'),('word','müssen','mittel','ss-ß'),
+  ('word','süß','mittel','ss-ß'),('word','schließen','mittel','ss-ß'),
+  ('word','gießen','mittel','ss-ß'),('word','beißen','mittel','ss-ß'),
+  ('word','reißen','mittel','ss-ß'),('word','Fleiß','mittel','ss-ß'),
+  ('word','kommen','mittel','doppelt'),('word','rennen','mittel','doppelt'),
+  ('word','brennen','mittel','doppelt'),('word','Mittag','mittel','doppelt'),
+  ('word','Bett','mittel','doppelt'),('word','Satz','mittel','doppelt'),
+  ('word','Witz','mittel','doppelt'),('word','Jetzt','mittel','doppelt'),
+  ('word','Ball','mittel','doppelt'),('word','Halle','mittel','doppelt'),
+  ('word','still','mittel','doppelt'),('word','hell','mittel','doppelt');
+
+-- Wörter: Schwer
+INSERT OR IGNORE INTO content_items (type, text, difficulty, category) VALUES
+  ('word','bereit','schwer','länger'),('word','erweitert','schwer','länger'),
+  ('word','bittersüß','schwer','länger'),('word','voraussichtlich','schwer','länger'),
+  ('word','unabhängig','schwer','länger'),('word','Zufriedenheit','schwer','länger'),
+  ('word','Möglichkeit','schwer','länger'),('word','Gesundheit','schwer','länger'),
+  ('word','Freundlichkeit','schwer','länger'),('word','Verantwortung','schwer','länger'),
+  ('word','Entwicklung','schwer','länger'),('word','Menschlichkeit','schwer','länger'),
+  ('word','Zweifel','schwer','ausnahme'),('word','Siebzehn','schwer','ausnahme'),
+  ('word','zwanzig','schwer','ausnahme'),('word','sechzehn','schwer','ausnahme'),
+  ('word','elf','schwer','ausnahme'),('word','zwölf','schwer','ausnahme'),
+  ('word','dreißig','schwer','ausnahme'),('word','feierlich','schwer','ausnahme'),
+  ('word','fasten','schwer','ausnahme'),('word','fest','schwer','ausnahme'),
+  ('word','Prozent','schwer','fremdwort'),('word','Interesse','schwer','fremdwort'),
+  ('word','Assistent','schwer','fremdwort'),('word','Karriere','schwer','fremdwort'),
+  ('word','Generation','schwer','fremdwort'),('word','Information','schwer','fremdwort'),
+  ('word','Station','schwer','fremdwort'),('word','Operation','schwer','fremdwort'),
+  ('word','Version','schwer','fremdwort'),('word','Kultur','schwer','fremdwort'),
+  ('word','Natur','schwer','fremdwort'),('word','Literatur','schwer','fremdwort'),
+  ('word','Elefant','schwer','fremdwort'),('word','Reparatur','schwer','fremdwort'),
+  ('word','Musik','schwer','fremdwort'),('word','Quadrat','schwer','fremdwort');
+
+-- Wörter: Experte
+INSERT OR IGNORE INTO content_items (type, text, difficulty, category) VALUES
+  ('word','Organisation','experte','fremdwort'),('word','Konstellation','experte','fremdwort'),
+  ('word','Exzellenz','experte','fremdwort'),('word','Sympathisant','experte','fremdwort'),
+  ('word','Idiosynkrasie','experte','fremdwort'),('word','Phänomen','experte','fremdwort'),
+  ('word','Hieroglyphen','experte','fremdwort'),('word','Anachronismus','experte','fremdwort'),
+  ('word','Schizophrenie','experte','fremdwort'),('word','Paradoxon','experte','fremdwort'),
+  ('word','Autobiografie','experte','fremdwort'),('word','Bibliografie','experte','fremdwort'),
+  ('word','Fotografie','experte','fremdwort'),('word','Orthographie','experte','fremdwort'),
+  ('word','Pneumonie','experte','fremdwort'),('word','Synonym','experte','fremdwort'),
+  ('word','Antonym','experte','fremdwort'),('word','Homonym','experte','fremdwort'),
+  ('word','Quintessenz','experte','fremdwort'),('word','Existenz','experte','fremdwort'),
+  ('word','Kompromiss','experte','fremdwort'),('word','Häresie','experte','fremdwort'),
+  ('word','Therapie','experte','fremdwort'),('word','Philosophie','experte','fremdwort'),
+  ('word','Demokratie','experte','fremdwort'),('word','Bürokratie','experte','fremdwort'),
+  ('word','Zwischenfrage','experte','länger'),('word','Widerspruchsverfahren','experte','länger'),
+  ('word','Datenschutzgrundverordnung','experte','länger'),('word','Geschwindigkeitsbegrenzung','experte','länger'),
+  ('word','Sonnenschein','experte','länger'),('word','Rechtsschutzversicherung','experte','länger'),
+  ('word','Stromschnellen','experte','länger'),('word','Fluggesellschaft','experte','länger');
+
+-- Sätze pro Schwierigkeitsstufe
+INSERT OR IGNORE INTO content_items (type, text, difficulty, category) VALUES
+  ('sentence','Ich schreibe heute einen Brief an meine Oma.','anfaenger','allgemein'),
+  ('sentence','Der Hund spielt im Garten.','anfaenger','allgemein'),
+  ('sentence','Wir gehen am Samstag ins Kino.','anfaenger','allgemein'),
+  ('sentence','Das Essen schmeckt sehr gut.','anfaenger','allgemein'),
+  ('sentence','Mein Bruder lernt jeden Tag Deutsch.','anfaenger','allgemein'),
+  ('sentence','Die Schule beginnt um acht Uhr.','anfaenger','allgemein'),
+  ('sentence','Ich habe gestern ein neues Buch gekauft.','leicht','allgemein'),
+  ('sentence','Kannst du mir bitte das Salz reichen?','leicht','allgemein'),
+  ('sentence','Wir fahren morgen mit dem Zug in die Stadt.','leicht','allgemein'),
+  ('sentence','Das Wetter ist heute schön und warm.','leicht','allgemein'),
+  ('sentence','Er spricht sehr gut Englisch und Französisch.','leicht','allgemein'),
+  ('sentence','Ich muss noch meine Hausaufgaben machen.','leicht','allgemein'),
+  ('sentence','Die Frage ist, ob wir rechtzeitig ankommen.','mittel','allgemein'),
+  ('sentence','Er hat das Buch gelesen und einen Brief geschrieben.','mittel','allgemein'),
+  ('sentence','Ich weiß nicht, ob das die richtige Antwort ist.','mittel','allgemein'),
+  ('sentence','Die Straße ist nach dem Regen sehr rutschig.','mittel','allgemein'),
+  ('sentence','Sie hat sich sehr über das Geschenk gefreut.','mittel','allgemein'),
+  ('sentence','Wir müssen uns beeilen, sonst verpassen wir den Bus.','mittel','allgemein'),
+  ('sentence','Der Professor erklärte den Zusammenhang zwischen Theorie und Praxis ausführlich.','schwer','allgemein'),
+  ('sentence','Trotz der schwierigen Umstände fand die Verhandlung einen zufriedenstellenden Abschluss.','schwer','allgemein'),
+  ('sentence','Die Organisation der Veranstaltung erforderte eine sorgfältige Planung und Koordination.','schwer','allgemein'),
+  ('sentence','Wissenschaftliche Erkenntnisse basieren auf fundierten Daten und objektiver Analyse.','schwer','allgemein'),
+  ('sentence','Das komplexe Thema wurde in einem ausführlichen Bericht dargestellt.','schwer','allgemein'),
+  ('sentence','Die interdisziplinäre Zusammenarbeit führte zu innovativen Lösungsansätzen.','schwer','allgemein'),
+  ('sentence','Philosophische Diskurse erfordern präzise Argumentation und logisches Denken.','experte','allgemein'),
+  ('sentence','Die Exzellenzinitiative fördert Spitzenforschung an deutschen Universitäten.','experte','allgemein'),
+  ('sentence','Konstitutionelle Monarchien und Republiken unterscheiden sich in ihrer Staatsform.','experte','allgemein'),
+  ('sentence','Linguistische Phänomene wie Alliteration und Metapher bereichern die Sprache.','experte','allgemein'),
+  ('sentence','Die interkulturelle Kommunikation erfordert Verständnis und Toleranz.','experte','allgemein');
+
+-- Längere Texte pro Schwierigkeitsstufe
+INSERT OR IGNORE INTO content_items (type, text, difficulty, category) VALUES
+  ('text','Am Wochenende gehe ich oft mit meiner Familie in den Park. Wir machen dort ein Picknick und spielen Fußball. Danach gehen wir zusammen nach Hause und kochen etwas Leckeres zum Abendessen. Am Sonntag lese ich ein interessantes Buch und lerne ein bisschen Deutsch.','leicht','allgemein'),
+  ('text','Gestern war ein besonderer Tag für mich. Ich habe meine Prüfung bestanden und bin sehr stolz darauf. Meine Eltern haben mich sofort angerufen und sich riesig gefreut. Heute Abend feiere ich mit meinen Freunden. Wir gehen in ein Restaurant und essen etwas Besonderes.','mittel','allgemein'),
+  ('text','Die deutsche Rechtschreibung gilt als besonders schwierig, weil sie viele Regeln und Ausnahmen enthält. Besonders bei Wörtern mit ie und ei oder bei der Unterscheidung von ss und ß machen viele Menschen Fehler. Mit regelmäßiger Übung und Aufmerksamkeit kann man seine Schreibkenntnisse jedoch deutlich verbessern und sicherer werden.','schwer','allgemein'),
+  ('text','Die organisationale Struktur eines Unternehmens beeinflusst maßgeblich seine Effizienz und Anpassungsfähigkeit. Moderne Managementansätze wie agile Arbeitsmethoden und flache Hierarchien fördern Innovation und schnelle Entscheidungsprozesse. Gleichzeitig erfordern komplexe Projekte eine präzise Koordination und transparente Kommunikation zwischen allen Beteiligten.','experte','allgemein');
