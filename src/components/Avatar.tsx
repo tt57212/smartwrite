@@ -5,7 +5,12 @@ const COLORS: Record<string, string> = {
   amber: 'from-amber-500 to-orange-500',
   sky: 'from-sky-500 to-cyan-500',
   violet: 'from-violet-500 to-purple-500',
+  gold: 'from-yellow-400 to-amber-600',
+  ocean: 'from-cyan-500 to-blue-700',
+  royal: 'from-fuchsia-500 to-purple-800',
 };
+
+export const PREMIUM_COLORS = ['gold', 'ocean', 'royal'];
 
 const ICONS: Record<string, string> = {
   star: '⭐', rocket: '🚀', bot: '🤖', wand: '🪄', cat: '🐱', dog: '🐶', panda: '🐼', alien: '👽',

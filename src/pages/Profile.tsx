@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context';
 import { del, get, patch, post } from '../lib/api';
 import type { Profile } from '../lib/types';
@@ -9,10 +9,12 @@ import { Badge, Button, Card, ErrorBox, Input, Modal, Select, Spinner, Textarea 
 
 const AVATAR_OPTIONS = ['star', 'rocket', 'bot', 'wand', 'cat', 'dog', 'panda', 'alien'];
 const AVATAR_ICONS: Record<string, string> = { star: '⭐', rocket: '🚀', bot: '🤖', wand: '🪄', cat: '🐱', dog: '🐶', panda: '🐼', alien: '👽' };
-const COLOR_OPTIONS = ['indigo', 'emerald', 'rose', 'amber', 'sky', 'violet'];
+const COLOR_OPTIONS = ['indigo', 'emerald', 'rose', 'amber', 'sky', 'violet', 'gold', 'ocean', 'royal'];
+const PREMIUM_COLOR_SET = new Set(['gold', 'ocean', 'royal']);
 
 export function ProfilePage() {
   const { me, meta, logout, switchProfile, refresh } = useApp();
+  const navigate = useNavigate();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('star');
@@ -100,13 +102,21 @@ export function ProfilePage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Farbe</label>
-            <div className="flex gap-2">
-              {COLOR_OPTIONS.map((c) => (
-                <button type="button" key={c} onClick={() => setColor(c)}
-                  className={`h-9 w-9 rounded-xl bg-gradient-to-br ${colorClass(c)} transition ${color === c ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-offset-slate-800' : ''}`} />
-              ))}
+            <label className="mb-1.5 block text-sm font-medium">Farbe {PREMIUM_COLOR_SET.has(color) && '⭐ Premium-Farbe'}</label>
+            <div className="flex flex-wrap gap-2">
+              {COLOR_OPTIONS.map((c) => {
+                const locked = PREMIUM_COLOR_SET.has(c) && !me.isPremium;
+                return (
+                  <button type="button" key={c}
+                    onClick={() => { if (locked) { navigate('/premium'); return; } setColor(c); }}
+                    title={locked ? 'Premium-Farbe – hier upgraden' : c}
+                    className={`relative h-9 w-9 rounded-xl bg-gradient-to-br ${colorClass(c)} transition ${color === c ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-offset-slate-800' : ''} ${locked ? 'opacity-50 saturate-50' : ''}`}>
+                    {locked && <span className="absolute -right-1 -top-1 text-[10px]">🔒</span>}
+                  </button>
+                );
+              })}
             </div>
+            {!me.isPremium && <p className="mt-1.5 text-xs text-slate-400">Gold, Ocean & Royal sind Premium-Farben.</p>}
           </div>
 
           <div>
@@ -255,6 +265,7 @@ function colorClass(c: string): string {
     indigo: 'from-indigo-500 to-violet-500', emerald: 'from-emerald-500 to-teal-500',
     rose: 'from-rose-500 to-pink-500', amber: 'from-amber-500 to-orange-500',
     sky: 'from-sky-500 to-cyan-500', violet: 'from-violet-500 to-purple-500',
+    gold: 'from-yellow-400 to-amber-600', ocean: 'from-cyan-500 to-blue-700', royal: 'from-fuchsia-500 to-purple-800',
   }[c] || 'from-indigo-500 to-violet-500';
 }
 

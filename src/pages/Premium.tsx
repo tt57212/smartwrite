@@ -3,16 +3,21 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { get, post, del } from '../lib/api';
 import type { PremiumStatus } from '../lib/types';
 import { useApp } from '../context';
-import { Badge, Button, Card, ErrorBox, Spinner, Textarea } from '../components/ui';
+import { Badge, Button, Card, ErrorBox, Spinner } from '../components/ui';
+
+const PRO_FEATURES = [
+  '♾️ Unbegrenzte Runden pro Tag',
+  '🧠 Alle Modi, Stufen & Listen',
+  '🤖 KI-Übungen & Fehleranalyse',
+  '🎨 Exklusive Profilfarben & Rahmen',
+  '⚡ Prioritäts-Support per E-Mail',
+];
 
 export function Premium() {
   const { me, refresh } = useApp();
   const [data, setData] = useState<PremiumStatus | null>(null);
   const [plan, setPlan] = useState('monthly');
-  const [note, setNote] = useState('');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [copied, setCopied] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [seatEmail, setSeatEmail] = useState('');
   const [seatBusy, setSeatBusy] = useState(false);
@@ -39,22 +44,7 @@ export function Premium() {
 
   if (!data) return <div className="flex justify-center py-20"><Spinner className="h-8 w-8" /></div>;
 
-  const pending = data.requests.find((r) => r.status === 'pending');
   const selected = data.plans.find((p) => p.key === plan);
-
-  const copyIban = () => {
-    void navigator.clipboard?.writeText(data.iban.replace(/\s/g, ''));
-    setCopied(true); setTimeout(() => setCopied(false), 1500);
-  };
-
-  const request = async () => {
-    setBusy(true); setError('');
-    try {
-      await post('/premium/request', { plan, note });
-      await load(); await refresh();
-    } catch (e) { setError(e instanceof Error ? e.message : 'Fehler'); }
-    finally { setBusy(false); }
-  };
 
   const checkout = async () => {
     setCheckoutBusy(true); setError('');
@@ -82,8 +72,9 @@ export function Premium() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-extrabold">⭐ SmartWrite Premium</h1>
-        <p className="mt-1 text-slate-500 dark:text-slate-400">Unbegrenzte Runden, jeden Tag. Keine Limits, kein Stress.</p>
+        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-3xl shadow-lg shadow-amber-500/30">👑</div>
+        <h1 className="text-3xl font-extrabold">SmartWrite Premium</h1>
+        <p className="mt-1 text-slate-500 dark:text-slate-400">Unbegrenztes Lernen, jeden Tag. Keine Limits, kein Stress.</p>
       </div>
 
       {paidMsg && (
@@ -99,35 +90,46 @@ export function Premium() {
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
             Unbegrenzte Runden{data.premiumUntil ? ` · gültig bis ${new Date(data.premiumUntil).toLocaleDateString('de-DE')}` : ''}
           </p>
+          <div className="mx-auto mt-5 grid max-w-md gap-2 text-left text-sm text-emerald-900 dark:text-emerald-200">
+            {PRO_FEATURES.map((f) => <p key={f}>✓ {f}</p>)}
+          </div>
         </Card>
       ) : (
         <>
           {/* Preise */}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             {data.plans.map((p) => (
               <button
                 key={p.key}
                 onClick={() => setPlan(p.key)}
-                className={`rounded-2xl border-2 p-6 text-left transition-all active:scale-[0.99] ${
+                className={`relative rounded-2xl border-2 p-6 text-left transition-all active:scale-[0.99] ${
                   plan === p.key
                     ? 'border-indigo-500 bg-indigo-50 shadow-lg shadow-indigo-500/10 dark:border-indigo-400 dark:bg-indigo-500/10'
                     : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800/60'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <p className="font-bold">{p.label}</p>
-                  {p.days === 365 && <Badge tone="violet"> {p.seats ? `Team · ${p.seats} Plätze` : ' Sparen '} </Badge>}
-                </div>
+                {p.seats && <div className="absolute -top-3 left-4"><Badge tone="violet">Team</Badge></div>}
+                <p className="font-bold">{p.label}</p>
                 <p className="mt-2 text-3xl font-black">{p.price}<span className="text-sm font-medium text-slate-400"> inkl. MwSt.</span></p>
-                <p className="mt-1 text-xs text-slate-500">{p.days === 365 ? '≈ 4,17 € pro Monat' : 'Jederzeit kündbar'}</p>
-                <ul className="mt-4 space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
-                  <li>✓ Unbegrenzte Runden pro Tag</li>
-                  <li>✓ Alle Modi & Stufen</li>
-                  <li>✓ KI-Übungen & Analysen</li>
-                </ul>
+                <p className="mt-1 text-xs text-slate-500">
+                  {p.seats ? `Für dich + ${p.seats} Team-Plätze` : p.days === 365 ? '≈ 4,17 € pro Monat' : 'Jederzeit kündbar'}
+                </p>
               </button>
             ))}
           </div>
+
+          {/* Pro-Features */}
+          <Card className="p-6">
+            <h2 className="mb-3 font-bold">✨ Alle Premium-Vorteile</h2>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {PRO_FEATURES.map((f) => <p key={f} className="text-sm text-slate-600 dark:text-slate-300">{f}</p>)}
+            </div>
+            {selected?.seats ? (
+              <p className="mt-3 rounded-xl bg-violet-50 px-4 py-2.5 text-sm text-violet-800 dark:bg-violet-500/10 dark:text-violet-200">
+                👥 <strong>Firmen-Tarif:</strong> Nach dem Kauf kannst du bis zu {selected.seats} weitere Accounts per E-Mail hinzufügen – alle erhalten Premium.
+              </p>
+            ) : null}
+          </Card>
 
           {/* Widerruf-Einwilligung (rechtlich erforderlich für digitale Inhalte) */}
           <Card className="p-5">
@@ -143,69 +145,23 @@ export function Premium() {
           </Card>
 
           {/* Sofort-Kauf per Karte (Stripe) */}
-          {data.cardPayment && (
+          {data.cardPayment ? (
             <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-violet-50 p-6 dark:border-indigo-500/30 dark:from-indigo-500/10 dark:to-violet-500/10">
-              <h2 className="mb-1 font-bold">⚡ Sofort bezahlen</h2>
+              <h2 className="mb-1 font-bold">⚡ Sicher bezahlen</h2>
               <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
-                Kartenzahlung über Stripe – Premium wird <strong>automatisch sofort</strong> freigeschaltet.
+                Kartenzahlung über Stripe (Visa, Mastercard, PayPal, Apple Pay) – Premium wird <strong>automatisch sofort</strong> freigeschaltet.
               </p>
-              <Button onClick={checkout} disabled={checkoutBusy || !!pending || !agreed} className="w-full py-3">
-                {checkoutBusy ? 'Weiterleitung…' : `💳 Jetzt ${selected?.price} bezahlen`}
+              {error && <div className="mb-3"><ErrorBox message={error} /></div>}
+              <Button onClick={checkout} disabled={checkoutBusy || !agreed} className="w-full py-3.5 text-base">
+                {checkoutBusy ? 'Weiterleitung zum Bezahlen…' : `💳 Jetzt ${selected?.price} bezahlen`}
               </Button>
-            </Card>
-          )}
-
-          {/* Zahlung per Überweisung */}
-          <Card className="p-6">
-            <h2 className="mb-3 font-bold">Zahlung per Überweisung</h2>
-            <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-900/50">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">An dieses Konto überweisen:</p>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <code className="rounded-lg bg-white px-3 py-2 font-mono text-sm font-bold dark:bg-slate-800">{data.iban}</code>
-                <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={copyIban}>{copied ? '✓ Kopiert' : 'Kopieren'}</Button>
-              </div>
-              <p className="mt-3 text-sm">
-                Betrag: <strong>{selected?.price}</strong> · Verwendungszweck:{' '}
-                <strong>SmartWrite Premium – {me?.user.email}</strong>
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-slate-500">
+                🔒 SSL-verschlüsselt · Keine Speicherung der Kartendaten
               </p>
-            </div>
-            <p className="mt-3 text-xs text-slate-500">
-              Nach Eingang der Überweisung wird dein Account manuell freigeschaltet (in der Regel innerhalb von 24 Stunden).
-            </p>
-
-            {pending ? (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">⏳ Anfrage offen</p>
-                <p className="mt-1 text-xs text-amber-700 dark:text-amber-300/80">
-                  Tarif: {data.plans.find((p) => p.key === pending.plan)?.label} · {new Date(pending.created_at).toLocaleDateString('de-DE')}.
-                  Wir prüfen den Zahlungseingang und schalten dich frei.
-                </p>
-              </div>
-            ) : (
-              <div className="mt-4 space-y-3">
-                <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Optional: Verwendungszweck / Bemerkung (z. B. Überweisungsdatum)" />
-                {error && <ErrorBox message={error} />}
-                <Button onClick={request} disabled={busy || !agreed} className="w-full py-3">
-                  {busy ? 'Wird gesendet…' : '✓ Ich habe überwiesen'}
-                </Button>
-              </div>
-            )}
-          </Card>
-
-          {/* Bisherige Anfragen */}
-          {data.requests.filter((r) => r.status !== 'pending').length > 0 && (
-            <Card className="p-6">
-              <h2 className="mb-3 font-bold">Anfragen-Verlauf</h2>
-              <div className="space-y-2">
-                {data.requests.filter((r) => r.status !== 'pending').map((r) => (
-                  <div key={r.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm dark:bg-slate-800/60">
-                    <span>{data.plans.find((p) => p.key === r.plan)?.label || r.plan}</span>
-                    <Badge tone={r.status === 'approved' ? 'green' : 'red'}>
-                      {r.status === 'approved' ? 'Freigeschaltet' : 'Abgelehnt'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+            </Card>
+          ) : (
+            <Card className="p-6 text-center">
+              <p className="text-sm text-slate-500">Online-Zahlung ist gerade nicht verfügbar. Bitte später erneut versuchen.</p>
             </Card>
           )}
         </>

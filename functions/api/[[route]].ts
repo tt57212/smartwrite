@@ -200,6 +200,11 @@ app.patch('/profiles/:id', async (c) => {
   const body = await c.req.json<{
     name?: string; avatar?: string; color?: string; dailyGoalXp?: number; weeklyGoalXp?: number; theme?: string;
   }>();
+  // Premium-exklusive Farben serverseitig absichern
+  const PREMIUM_COLORS = ['gold', 'ocean', 'royal'];
+  if (body.color && PREMIUM_COLORS.includes(body.color) && !isPremiumUser(auth.user)) {
+    return jsonError(c, 'Diese Farbe ist nur mit Premium verfügbar.', 403);
+  }
   await c.env.DB.prepare(
     'UPDATE profiles SET name = COALESCE(?, name), avatar = COALESCE(?, avatar), color = COALESCE(?, color), daily_goal_xp = COALESCE(?, daily_goal_xp), weekly_goal_xp = COALESCE(?, weekly_goal_xp) WHERE id = ?'
   ).bind(body.name ?? null, body.avatar ?? null, body.color ?? null,
@@ -240,6 +245,7 @@ app.get('/meta', async (c) => {
     rewards,
     avatars: ['star', 'rocket', 'bot', 'wand', 'cat', 'dog', 'panda', 'alien'],
     colors: ['indigo', 'emerald', 'rose', 'amber', 'sky', 'violet'],
+    premiumColors: ['gold', 'ocean', 'royal'],
     modes: [
       { key: 'word', label: 'Wörter', desc: 'Einzelne Wörter hören und schreiben' },
       { key: 'sentence', label: 'Sätze', desc: 'Ganze Sätze anhören und schreiben' },
