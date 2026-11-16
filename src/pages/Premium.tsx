@@ -99,7 +99,7 @@ export function Premium() {
           {/* Preise – bei deaktiviertem Verkauf ausgegraut, aber sichtbar */}
           <div className="grid gap-4 sm:grid-cols-3">
             {data.plans.map((p) => {
-              const salesOff = data.salesEnabled === false;
+              const salesOff = data.salesEnabled === false || p.enabled === false;
               return (
                 <button
                   key={p.key}

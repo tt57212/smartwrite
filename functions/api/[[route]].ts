@@ -916,20 +916,26 @@ const DEFAULT_PLANS: Record<string, { label: string; days: number; cents: number
   business: { label: 'Premium Firma', days: 365, cents: 10000, seats: 0 }, // seats: 0 = unbegrenzt
 };
 
-async function getPlans(env: Env): Promise<Record<string, { label: string; days: number; cents: number; seats?: number }>> {
+type PlanCfg = { label: string; days: number; cents: number; seats?: number; enabled?: boolean };
+
+async function getPlans(env: Env): Promise<Record<string, PlanCfg>> {
   try {
     const row = await env.DB.prepare("SELECT value FROM app_settings WHERE key = 'premium_plans'").first<{ value: string }>();
-    if (!row) return DEFAULT_PLANS;
-    const overrides = JSON.parse(row.value) as Record<string, Partial<{ label: string; days: number; cents: number; seats: number; enabled: boolean }>>;
-    const merged: typeof DEFAULT_PLANS = { ...DEFAULT_PLANS };
-    for (const [k, v] of Object.entries(overrides)) {
-      if (v.enabled === false) { delete merged[k]; continue; }
-      if (merged[k]) merged[k] = { ...merged[k], ...v };
-      else merged[k] = { label: k, days: 30, cents: 0, seats: 0, ...v } as never;
+    const overrides = (row ? JSON.parse(row.value) : {}) as Record<string, Partial<PlanCfg>>;
+    const out: Record<string, PlanCfg> = {};
+    // Standard-Tarife immer vorhanden – deaktivierte Tarife bleiben gespeichert (enabled: false)
+    for (const [k, d] of Object.entries(DEFAULT_PLANS)) {
+      const o = overrides[k] || {};
+      out[k] = { ...d, ...o, enabled: o.enabled !== false };
     }
-    return merged;
+    // Vom Admin angelegte Extratarife
+    for (const [k, o] of Object.entries(overrides)) {
+      if (out[k]) continue;
+      out[k] = { label: k, days: 30, cents: 0, seats: 0, ...o, enabled: o.enabled !== false };
+    }
+    return out;
   } catch {
-    return DEFAULT_PLANS;
+    return { ...DEFAULT_PLANS };
   }
 }
 
@@ -1040,7 +1046,7 @@ app.post('/premium/request', async (c) => {
   const { plan, note } = await c.req.json<{ plan?: string; note?: string }>();
   const plans = await getPlans(env);
   const p = plan ? plans[plan] : undefined;
-  if (!p) return jsonError(c, 'Ungültiger Tarif.');
+  if (!p || p.enabled === false) return jsonError(c, 'Ungültiger Tarif.');
   if (isPremiumUser(auth.user)) return jsonError(c, 'Du hast bereits Premium.');
 
   const pending = await env.DB.prepare(
@@ -1080,7 +1086,7 @@ app.post('/premium/checkout', async (c) => {
   const { plan } = await c.req.json<{ plan?: string }>();
   const plans = await getPlans(env);
   const p = plan ? plans[plan] : undefined;
-  if (!p) return jsonError(c, 'Ungültiger Tarif.');
+  if (!p || p.enabled === false) return jsonError(c, 'Ungültiger Tarif.');
 
   const base = env.APP_URL || new URL(c.req.url).origin;
   const body = new URLSearchParams();

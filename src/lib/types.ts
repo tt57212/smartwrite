@@ -54,7 +54,7 @@ export interface PremiumStatus {
   price: string;
   cardPayment?: boolean;
   salesEnabled?: boolean;
-  plans: { key: string; label: string; days: number; cents: number; seats?: number; price: string }[];
+  plans: { key: string; label: string; days: number; cents: number; seats?: number; enabled?: boolean; price: string }[];
   requests: { id: string; plan: string; amount_cents: number; status: string; note: string; created_at: string; decided_at: string | null }[];
 }
 
