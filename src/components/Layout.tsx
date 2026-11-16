@@ -91,7 +91,7 @@ export function Layout() {
       </aside>
 
       {/* Mobile Topbar */}
-      <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/90">
+      <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/90">
         <span className="flex items-center gap-2 text-base font-extrabold"><img src="/logo.svg" alt="via" className="h-7 w-7 rounded-lg" />SmartWrite</span>
         <div className="flex items-center gap-2">
           <ProfileSwitcher compact />
@@ -123,18 +123,20 @@ export function Layout() {
       </main>
       <Tour />
 
-      {/* Mobile Bottom-Nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-slate-200 bg-white/95 py-2 backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/95">
-        {NAV.slice(0, 5).map((n) => (
+      {/* Mobile Bottom-Nav: alle Menüpunkte horizontal scrollbar */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex gap-1 overflow-x-auto border-t border-slate-200 bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] pt-1.5 backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/95" style={{ scrollbarWidth: 'none' }}>
+        {NAV.map((n) => (
           <NavLink key={n.to} to={n.to} end={n.end}
-            className={({ isActive }) => `flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
-            <span className="text-lg">{n.icon}</span>{n.label}
+            className={({ isActive }) => `flex min-w-[64px] flex-1 flex-col items-center gap-0.5 rounded-xl px-2 py-2 text-[10px] font-medium transition ${isActive ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
+            <span className="text-lg leading-none">{n.icon}</span>{n.label}
           </NavLink>
         ))}
-        <NavLink to="/profile"
-          className={({ isActive }) => `flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
-          <span className="text-lg">👤</span>Profil
-        </NavLink>
+        {me.isAdmin && (
+          <NavLink to="/admin"
+            className={({ isActive }) => `flex min-w-[64px] flex-1 flex-col items-center gap-0.5 rounded-xl px-2 py-2 text-[10px] font-medium transition ${isActive ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}`}>
+            <span className="text-lg leading-none">�️</span>Admin
+          </NavLink>
+        )}
       </nav>
     </div>
   );
