@@ -108,11 +108,12 @@ export function Premium() {
                     : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800/60'
                 }`}
               >
-                {p.seats && <div className="absolute -top-3 left-4"><Badge tone="violet">Team</Badge></div>}
+                {p.seats !== undefined && p.seats > 0 && <div className="absolute -top-3 left-4"><Badge tone="violet">Team</Badge></div>}
+                {p.seats === 0 && <div className="absolute -top-3 left-4"><Badge tone="violet">Team · ∞</Badge></div>}
                 <p className="font-bold">{p.label}</p>
                 <p className="mt-2 text-3xl font-black">{p.price}<span className="text-sm font-medium text-slate-400"> inkl. MwSt.</span></p>
                 <p className="mt-1 text-xs text-slate-500">
-                  {p.seats ? `Für dich + ${p.seats} Team-Plätze` : p.days === 365 ? '≈ 4,17 € pro Monat' : 'Jederzeit kündbar'}
+                  {p.seats ? (p.seats > 0 ? `Für dich + ${p.seats} Team-Plätze` : 'Unbegrenzte Team-Plätze') : p.days === 365 ? '≈ 4,17 € pro Monat' : 'Jederzeit kündbar'}
                 </p>
               </button>
             ))}
@@ -126,7 +127,7 @@ export function Premium() {
             </div>
             {selected?.seats ? (
               <p className="mt-3 rounded-xl bg-violet-50 px-4 py-2.5 text-sm text-violet-800 dark:bg-violet-500/10 dark:text-violet-200">
-                👥 <strong>Firmen-Tarif:</strong> Nach dem Kauf kannst du bis zu {selected.seats} weitere Accounts per E-Mail hinzufügen – alle erhalten Premium.
+                👥 <strong>Firmen-Tarif:</strong> Nach dem Kauf kannst du <strong>unbegrenzt</strong> viele Accounts per E-Mail hinzufügen – alle erhalten Premium.
               </p>
             ) : null}
           </Card>
@@ -172,7 +173,7 @@ export function Premium() {
         <Card className="p-6">
           <h2 className="mb-1 font-bold">👥 Firmen-Team</h2>
           <p className="mb-4 text-sm text-slate-500">
-            Dein Firmen-Premium gilt für dich und bis zu <strong>{data.seatLimit ?? 10}</strong> Team-Mitglieder.
+            Dein Firmen-Premium gilt für dich und <strong>{(data.seatLimit ?? 0) > 0 ? `bis zu ${data.seatLimit} Team-Mitglieder` : 'unbegrenzt viele Team-Mitglieder'}</strong>.
             Füge Accounts per E-Mail hinzu – sie erhalten automatisch Premium.
           </p>
           <div className="flex gap-2">

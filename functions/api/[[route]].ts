@@ -894,7 +894,7 @@ app.post('/ai/analyze', async (c) => {
 const DEFAULT_PLANS: Record<string, { label: string; days: number; cents: number; seats?: number }> = {
   monthly: { label: 'Premium Monat', days: 30, cents: 499 },
   yearly: { label: 'Premium Jahr', days: 365, cents: 4999 },
-  business: { label: 'Premium Firma', days: 365, cents: 10000, seats: 10 },
+  business: { label: 'Premium Firma', days: 365, cents: 10000, seats: 0 }, // seats: 0 = unbegrenzt
 };
 
 async function getPlans(env: Env): Promise<Record<string, { label: string; days: number; cents: number; seats?: number }>> {
@@ -938,7 +938,7 @@ app.get('/premium', async (c) => {
   let seatLimit = 0;
   if (isBusinessOwner(auth.user)) {
     const bp = plans.business;
-    seatLimit = bp?.seats ?? 10;
+    seatLimit = bp?.seats ?? 0; // 0 = unbegrenzt
     const { results } = await env.DB.prepare(
       `SELECT s.id, s.member_email, s.created_at, p.name AS member_name
        FROM premium_seats s LEFT JOIN profiles p ON p.user_id = s.member_id
@@ -970,10 +970,10 @@ app.post('/premium/seats', async (c) => {
     return jsonError(c, 'Firmen-Premium erforderlich.', 403);
   }
   const plans = await getPlans(env);
-  const seatLimit = plans.business?.seats ?? 10;
+  const seatLimit = plans.business?.seats ?? 0; // 0 = unbegrenzt
   const { results: existing } = await env.DB.prepare('SELECT COUNT(*) AS n FROM premium_seats WHERE owner_id = ?')
     .bind(auth.user.id).all<{ n: number }>();
-  if ((existing[0]?.n || 0) >= seatLimit) return jsonError(c, `Maximal ${seatLimit} Team-Plätze.`);
+  if (seatLimit > 0 && (existing[0]?.n || 0) >= seatLimit) return jsonError(c, `Maximal ${seatLimit} Team-Plätze.`);
 
   const { email } = await c.req.json<{ email?: string }>();
   const mail = (email || '').trim().toLowerCase();

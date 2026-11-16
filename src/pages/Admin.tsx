@@ -245,7 +245,7 @@ function PlanEditor() {
                 value={(p.cents / 100).toFixed(2)} onChange={(e) => set(key, 'cents', Math.round(parseFloat(e.target.value || '0') * 100))} /></label>
               <label className="flex items-center gap-1 text-xs text-slate-500">Tage<input type="number" className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900"
                 value={p.days} onChange={(e) => set(key, 'days', parseInt(e.target.value) || 30)} /></label>
-              <label className="flex items-center gap-1 text-xs text-slate-500">Plätze<input type="number" className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900"
+              <label className="flex items-center gap-1 text-xs text-slate-500" title="0 = unbegrenzt">Plätze<input type="number" className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900"
                 value={p.seats ?? ''} onChange={(e) => set(key, 'seats', parseInt(e.target.value) || 0)} /></label>
               <label className="flex items-center gap-1.5 text-xs font-medium">
                 <input type="checkbox" checked={p.enabled !== false} onChange={(e) => set(key, 'enabled', e.target.checked)} className="accent-indigo-600" />
