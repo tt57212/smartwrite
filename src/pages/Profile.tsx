@@ -221,6 +221,17 @@ export function ProfilePage() {
           <p className="text-sm text-slate-500">Angemeldet als <strong>{me.user.email}</strong></p>
           <Button variant="danger" onClick={() => void logout()}>Abmelden</Button>
         </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+          <Button
+            variant="secondary"
+            className="px-4 py-2 text-sm"
+            onClick={() => { localStorage.removeItem('sw_tour_v1'); window.dispatchEvent(new Event('sw-restart-tour')); }}
+          >🧭 Einführungstour wiederholen</Button>
+          <span className="mx-1 text-slate-300 dark:text-slate-600">|</span>
+          <Link to="/datenschutz" className="text-xs font-medium text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400">Datenschutz</Link>
+          <Link to="/impressum" className="text-xs font-medium text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400">Impressum</Link>
+          <Link to="/agb" className="text-xs font-medium text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400">AGB</Link>
+        </div>
       </Card>
 
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Neues Profil">

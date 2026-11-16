@@ -95,6 +95,11 @@ export function Layout() {
         <span className="flex items-center gap-2 text-base font-extrabold"><img src="/logo.svg" alt="via" className="h-7 w-7 rounded-lg" />SmartWrite</span>
         <div className="flex items-center gap-2">
           <ProfileSwitcher compact />
+          <button
+            onClick={() => { localStorage.removeItem('sw_tour_v1'); window.dispatchEvent(new Event('sw-restart-tour')); }}
+            className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+            title="Hilfe / Tour"
+          >❓</button>
           <ThemeToggle dark={dark} toggle={toggleDark} />
         </div>
       </div>
@@ -104,6 +109,11 @@ export function Layout() {
         <div className="page-enter mx-auto max-w-5xl">
           <div className="mb-4 flex items-center justify-end gap-2 max-lg:hidden">
             <ThemeToggle dark={dark} toggle={toggleDark} />
+            <button
+              onClick={() => { localStorage.removeItem('sw_tour_v1'); window.dispatchEvent(new Event('sw-restart-tour')); }}
+              className="rounded-xl px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+              title="Einführungstour starten"
+            >❓ Hilfe</button>
             <button onClick={onLogout} className="rounded-xl px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
               Abmelden
             </button>

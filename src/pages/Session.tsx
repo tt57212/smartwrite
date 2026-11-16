@@ -282,8 +282,8 @@ function Results({ result, onAgain, onHome, onNew }: {
                     <span className="ml-auto text-sm font-bold text-slate-500">{r.points}/{r.maxPoints}</span>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                    <span className="text-slate-500">Dein Versuch: <strong className="text-slate-800 dark:text-slate-200">„{r.given || '—'}“</strong></span>
-                    <span className="text-emerald-700 dark:text-emerald-400">Richtig: <strong>{r.expected}</strong></span>
+                    <span className="text-slate-500">Dein Versuch: <strong className="break-words text-slate-800 dark:text-slate-200">„{r.given || '—'}“</strong></span>
+                    <span className="text-emerald-700 dark:text-emerald-400">Richtig: <strong className="break-words">{r.expected}</strong></span>
                   </div>
                   {r.verdict !== 'unclear' && (
                     <p className="mt-1.5 text-xs text-slate-500">{r.feedback}</p>

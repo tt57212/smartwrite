@@ -9,6 +9,14 @@
 html { scroll-behavior: smooth; }
 body { font-family: var(--font-sans); }
 
+/* Mobile-Härtung: kein horizontales Scrollen, kein iOS-Auto-Zoom */
+html, body { overflow-x: clip; }
+img, video { max-width: 100%; height: auto; }
+code, pre { overflow-wrap: anywhere; }
+@media (max-width: 768px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
 ::selection { background: rgb(99 102 241 / 0.3); }
 
 /* Dezente Animationen */

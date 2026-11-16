@@ -33,6 +33,13 @@ export function Tour() {
     return () => clearTimeout(t);
   }, []);
 
+  // Tour kann von überall neu gestartet werden
+  useEffect(() => {
+    const restart = () => { localStorage.removeItem(KEY); setStep(0); };
+    window.addEventListener('sw-restart-tour', restart);
+    return () => window.removeEventListener('sw-restart-tour', restart);
+  }, []);
+
   // Bei Seitenwechsel Steps mit Targets neu positionieren
   useEffect(() => {
     if (step < 0) return;
