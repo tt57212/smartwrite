@@ -9,6 +9,7 @@ import { Lists } from './pages/Lists';
 import { Words } from './pages/Words';
 import { History } from './pages/History';
 import { Rewards } from './pages/Rewards';
+import { Leaderboard } from './pages/Leaderboard';
 import { ProfilePage } from './pages/Profile';
 import { Premium } from './pages/Premium';
 import { Admin } from './pages/Admin';
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/words" element={<Words />} />
             <Route path="/history" element={<History />} />
             <Route path="/rewards" element={<Rewards />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/premium" element={<Premium />} />
             <Route path="/admin" element={<Admin />} />

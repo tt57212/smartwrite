@@ -617,6 +617,25 @@ async function checkRewards(
   return newly.map((r) => ({ id: r.id, name: r.name, description: r.description, icon: r.icon }));
 }
 
+// ================= RANGLISTE =================
+
+app.get('/leaderboard', async (c) => {
+  const auth = await requireAuth(c);
+  const { results } = await c.env.DB.prepare(
+    'SELECT id, name, avatar, color, xp, streak FROM profiles ORDER BY xp DESC LIMIT 50'
+  ).all<{ id: string; name: string; avatar: string; color: string; xp: number; streak: number }>();
+  const rankRow = await c.env.DB.prepare('SELECT COUNT(*) AS n FROM profiles WHERE xp > ?')
+    .bind(auth.profile.xp).first<{ n: number }>();
+  const total = await c.env.DB.prepare('SELECT COUNT(*) AS n FROM profiles').first<{ n: number }>();
+  return c.json({
+    entries: results.map((p, i) => ({
+      ...p, rank: i + 1, level: levelForXp(p.xp).level, me: p.id === auth.profile.id,
+    })),
+    myRank: (rankRow?.n || 0) + 1,
+    totalProfiles: total?.n || 0,
+  });
+});
+
 // ================= STATISTIKEN =================
 
 app.get('/stats', async (c) => {

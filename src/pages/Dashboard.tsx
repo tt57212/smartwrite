@@ -57,6 +57,7 @@ export function Dashboard() {
           <Link to="/train?mode=word&difficulty=leicht"><Button variant="secondary" className="px-4 py-2 text-xs">⚡ Wörter · Leicht</Button></Link>
           <Link to="/train?mode=dictation&difficulty=mittel"><Button variant="secondary" className="px-4 py-2 text-xs">🎧 Diktat · Mittel</Button></Link>
           <Link to="/train"><Button className="px-6 py-3 text-base">▶ Jetzt üben</Button></Link>
+          <Link to="/leaderboard"><Button variant="secondary" className="px-4 py-2 text-xs">🏅 Rangliste</Button></Link>
         </div>
       </div>
 

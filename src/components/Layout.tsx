@@ -13,6 +13,7 @@ const NAV = [
   { to: '/words', label: 'Fehlerwörter', icon: '🎯' },
   { to: '/history', label: 'Verlauf', icon: '🕘' },
   { to: '/rewards', label: 'Belohnungen', icon: '🏆' },
+  { to: '/leaderboard', label: 'Rangliste', icon: '🏅' },
   { to: '/premium', label: 'Premium', icon: '⭐' },
   { to: '/profile', label: 'Profil', icon: '👤' },
 ];
