@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useApp } from '../context';
 import { post, get } from '../lib/api';
 import type { RoundStart, WordList } from '../lib/types';
 import { Button, Card, ErrorBox, Input, Select, Spinner } from '../components/ui';
 
 export function Train() {
-  const { meta } = useApp();
+  const { meta, me } = useApp();
+  const [limitHit, setLimitHit] = useState(false);
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [mode, setMode] = useState(params.get('mode') || 'word');
@@ -32,7 +34,9 @@ export function Train() {
       });
       navigate(`/session/${round.roundId}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Runde konnte nicht gestartet werden.');
+      const err = e as { message?: string; status?: number };
+      if (err.status === 429) setLimitHit(true);
+      setError(err.message || 'Runde konnte nicht gestartet werden.');
       setBusy(false);
     }
   };
@@ -136,6 +140,16 @@ export function Train() {
         </div>
 
         {error && <ErrorBox message={error} />}
+
+        {limitHit && !me?.isPremium && (
+          <Card className="border-amber-200 bg-amber-50 p-5 dark:border-amber-500/30 dark:bg-amber-500/10">
+            <p className="font-bold text-amber-800 dark:text-amber-300">Tageslimit erreicht</p>
+            <p className="mt-1 text-sm text-amber-700 dark:text-amber-300/80">
+              Gratis-Accounts dürfen 10 Runden pro Tag machen. Mit <strong>Premium</strong> gibt es unbegrenzte Runden.
+            </p>
+            <Link to="/premium" className="mt-3 inline-block"><Button className="px-4 py-2 text-sm">⭐ Premium holen</Button></Link>
+          </Card>
+        )}
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button onClick={start} disabled={busy} className="flex-1 py-3.5 text-base">

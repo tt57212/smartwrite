@@ -5,7 +5,7 @@ import {
   uid, hashPassword, verifyPassword, isAdminEmail, sessionCookie, clearCookie,
   levelForXp, gradeForPercent, jsonError,
 } from '../_lib/util';
-import { createSession, getAuth, requireAuth, requireAdmin, publicUser, type Auth } from '../_lib/auth';
+import { createSession, getAuth, requireAuth, requireAdmin, publicUser, isPremiumUser, type Auth } from '../_lib/auth';
 import { gradeText, tokenize, verdictLabel, type Verdict } from '../_lib/phonetic';
 import { isAIConfigured, generateExercises, analyzeErrors } from '../_lib/ai';
 
@@ -23,10 +23,14 @@ app.onError((err, c) => {
 
 function mePayload(auth: Auth, env: Env) {
   const { level, into, needed } = levelForXp(auth.profile.xp);
+  const premium = isPremiumUser(auth.user);
   return {
     user: publicUser(auth, env),
     profile: auth.profile,
     isAdmin: auth.user.role === 'admin' || isAdminEmail(auth.user.email, env),
+    isPremium: premium,
+    premiumUntil: auth.user.premium_until || null,
+    dailyRoundLimit: premium ? null : 10,
     level: { level, xpInto: into, xpNeeded: needed, xp: auth.profile.xp },
   };
 }
@@ -96,7 +100,7 @@ app.post('/register', async (c) => {
   c.header('Set-Cookie', sessionCookie(token, secure));
 
   const auth: Auth = {
-    user: { id: userId, email: mail, role, settings: {} },
+    user: { id: userId, email: mail, role, settings: {}, premium_until: null },
     profile: {
       id: profileId, user_id: userId, name: profileName, avatar: 'star', color: 'indigo',
       daily_goal_xp: 100, xp: 0, streak: 0, best_streak: 0, last_active_date: null,
@@ -114,7 +118,7 @@ app.post('/login', async (c) => {
   const env = c.env;
 
   const user = await env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(mail)
-    .first<{ id: string; email: string; password_hash: string; role: string; settings: string }>();
+    .first<{ id: string; email: string; password_hash: string; role: string; settings: string; premium_until: string | null }>();
   if (!user || !(await verifyPassword(password || '', user.password_hash))) {
     return jsonError(c, 'E-Mail oder Passwort ist falsch.', 401);
   }
@@ -134,7 +138,7 @@ app.post('/login', async (c) => {
     ? await env.DB.prepare('SELECT * FROM profiles WHERE id = ?').bind(profileId).first<NonNullable<Auth['profile']>>()
     : null;
   const auth: Auth = {
-    user: { id: user.id, email: user.email, role, settings: JSON.parse(user.settings || '{}') },
+    user: { id: user.id, email: user.email, role, settings: JSON.parse(user.settings || '{}'), premium_until: user.premium_until },
     profile: profile!,
     sessionToken: token,
   };
@@ -258,6 +262,19 @@ app.post('/rounds', async (c) => {
   if (!type) return jsonError(c, 'Ungültiger Modus.');
   const count = Math.min(Math.max(body.count || 10, 1), mode === 'text' ? 3 : 50);
   const env = c.env;
+
+  // Tageslimit: 10 Runden/Tag für Gratis-User, unbegrenzt für Premium/Admins
+  if (!isPremiumUser(auth.user)) {
+    const today = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM rounds WHERE profile_id = ? AND status='finished' AND date(finished_at) = date('now')"
+    ).bind(auth.profile.id).first<{ n: number }>();
+    if ((today?.n || 0) >= 10) {
+      return c.json({
+        error: 'Tageslimit erreicht: 10 Runden pro Tag. Wechsle auf Premium für unbegrenzte Runden.',
+        upgrade: true,
+      }, 429);
+    }
+  }
 
   let candidates: { ref_type: string; ref_id: number; prompt: string; answer: string; difficulty: string | null }[] = [];
 
@@ -825,6 +842,68 @@ app.post('/ai/analyze', async (c) => {
   return c.json({ source: 'builtin', summary, tips, recommendation });
 });
 
+// ================= PREMIUM =================
+
+const PREMIUM_PLANS: Record<string, { label: string; days: number; cents: number }> = {
+  monthly: { label: 'Premium Monat', days: 30, cents: 499 },
+  yearly: { label: 'Premium Jahr', days: 365, cents: 4999 },
+};
+const PREMIUM_IBAN = 'DE91 2004 1188 0418 0949 00';
+const PREMIUM_PRICE = '4,99 € / Monat oder 49,99 € / Jahr';
+
+app.get('/premium', async (c) => {
+  const auth = await requireAuth(c);
+  const env = c.env;
+  const premium = isPremiumUser(auth.user);
+  const today = await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM rounds WHERE profile_id = ? AND status='finished' AND date(finished_at) = date('now')"
+  ).bind(auth.profile.id).first<{ n: number }>();
+  const { results: requests } = await env.DB.prepare(
+    'SELECT id, plan, amount_cents, status, note, created_at, decided_at FROM premium_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 10'
+  ).bind(auth.user.id).all();
+  return c.json({
+    isPremium: premium,
+    premiumUntil: auth.user.premium_until || null,
+    dailyUsed: today?.n || 0,
+    dailyLimit: premium ? null : 10,
+    iban: PREMIUM_IBAN,
+    price: PREMIUM_PRICE,
+    plans: Object.entries(PREMIUM_PLANS).map(([key, p]) => ({ key, ...p, price: (p.cents / 100).toFixed(2).replace('.', ',') + ' €' })),
+    requests,
+  });
+});
+
+app.post('/premium/request', async (c) => {
+  const auth = await requireAuth(c);
+  const env = c.env;
+  const { plan, note } = await c.req.json<{ plan?: string; note?: string }>();
+  const p = plan ? PREMIUM_PLANS[plan] : undefined;
+  if (!p) return jsonError(c, 'Ungültiger Tarif.');
+  if (isPremiumUser(auth.user)) return jsonError(c, 'Du hast bereits Premium.');
+
+  const pending = await env.DB.prepare(
+    "SELECT id FROM premium_requests WHERE user_id = ? AND status = 'pending'"
+  ).bind(auth.user.id).first();
+  if (pending) return jsonError(c, 'Es gibt bereits eine offene Anfrage.', 409);
+
+  // Duplikat-Hinweis: gleichnamiges Profil bei anderem Account?
+  const myProfile = await env.DB.prepare('SELECT name FROM profiles WHERE id = ?')
+    .bind(auth.profile.id).first<{ name: string }>();
+  const dup = myProfile?.name
+    ? await env.DB.prepare(
+        `SELECT u.email FROM profiles p JOIN users u ON u.id = p.user_id
+         WHERE p.name = ? AND u.id != ? LIMIT 1`
+      ).bind(myProfile.name, auth.user.id).first<{ email: string }>()
+    : null;
+
+  const id = uid();
+  await env.DB.prepare(
+    'INSERT INTO premium_requests (id, user_id, email, plan, amount_cents, note, possible_duplicate) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(id, auth.user.id, auth.user.email, plan!, p.cents, (note || '').slice(0, 500), dup ? 1 : 0).run();
+
+  return c.json({ ok: true, id, duplicateWarning: !!dup }, 201);
+});
+
 // ================= ADMIN =================
 
 const admin = new Hono<C>();
@@ -835,7 +914,7 @@ admin.use('*', async (c, next) => {
 
 admin.get('/users', async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT u.id, u.email, u.role, u.created_at,
+    `SELECT u.id, u.email, u.role, u.created_at, u.premium_until,
        (SELECT COUNT(*) FROM profiles p WHERE p.user_id = u.id) AS profile_count,
        (SELECT COALESCE(SUM(xp),0) FROM profiles p WHERE p.user_id = u.id) AS total_xp
      FROM users u ORDER BY u.created_at DESC`
@@ -863,8 +942,51 @@ admin.post('/users', async (c) => {
   return c.json({ ok: true, id: userId }, 201);
 });
 
+admin.get('/premium', async (c) => {
+  const status = c.req.query('status') || 'pending';
+  const { results } = await c.env.DB.prepare(
+    `SELECT pr.*, u.role AS user_role FROM premium_requests pr
+     JOIN users u ON u.id = pr.user_id
+     ${status === 'all' ? '' : 'WHERE pr.status = ?'}
+     ORDER BY pr.created_at DESC LIMIT 200`
+  ).bind(...(status === 'all' ? [] : [status])).all();
+  return c.json({ requests: results });
+});
+
+admin.post('/premium/:id/approve', async (c) => {
+  const auth = await requireAdmin(c);
+  const id = c.req.param('id');
+  const { days } = await c.req.json<{ days?: number }>();
+  const req = await c.env.DB.prepare('SELECT * FROM premium_requests WHERE id = ?')
+    .bind(id).first<{ id: string; user_id: string; plan: string; status: string }>();
+  if (!req) return jsonError(c, 'Anfrage nicht gefunden.', 404);
+  if (req.status !== 'pending') return jsonError(c, 'Anfrage bereits bearbeitet.', 409);
+
+  const d = days || PREMIUM_PLANS[req.plan]?.days || 30;
+  // premium_until verlängern (ab heute oder ab bestehender Laufzeit)
+  await c.env.DB.prepare(
+    `UPDATE users SET premium_until = (
+       SELECT strftime('%Y-%m-%d %H:%M:%S', MAX(COALESCE(premium_until, datetime('now')), datetime('now')) , '+' || ? || ' days')
+       FROM users WHERE id = ?
+     ) WHERE id = ?`
+  ).bind(d, req.user_id, req.user_id).run();
+  await c.env.DB.prepare(
+    "UPDATE premium_requests SET status='approved', decided_at=datetime('now'), decided_by=? WHERE id=?"
+  ).bind(auth.user.email, id).run();
+  return c.json({ ok: true });
+});
+
+admin.post('/premium/:id/reject', async (c) => {
+  const auth = await requireAdmin(c);
+  const id = c.req.param('id');
+  await c.env.DB.prepare(
+    "UPDATE premium_requests SET status='rejected', decided_at=datetime('now'), decided_by=? WHERE id=? AND status='pending'"
+  ).bind(auth.user.email, id).run();
+  return c.json({ ok: true });
+});
+
 admin.patch('/users/:id', async (c) => {
-  const { role, password } = await c.req.json<{ role?: string; password?: string }>();
+  const { role, password, premiumUntil } = await c.req.json<{ role?: string; password?: string; premiumUntil?: string | null }>();
   const id = c.req.param('id');
   if (role !== undefined) {
     if (!['user', 'admin'].includes(role)) return jsonError(c, 'Ungültige Rolle.');
@@ -874,6 +996,10 @@ admin.patch('/users/:id', async (c) => {
     if (password.length < 8) return jsonError(c, 'Passwort min. 8 Zeichen.');
     await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
       .bind(await hashPassword(password), id).run();
+  }
+  if (premiumUntil !== undefined) {
+    await c.env.DB.prepare('UPDATE users SET premium_until = ? WHERE id = ?')
+      .bind(premiumUntil, id).run();
   }
   return c.json({ ok: true });
 });

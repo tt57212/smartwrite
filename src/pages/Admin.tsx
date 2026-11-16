@@ -3,15 +3,19 @@ import { useApp } from '../context';
 import { del, get, patch, post } from '../lib/api';
 import { Badge, Button, Card, ErrorBox, Input, Modal, Select, Spinner } from '../components/ui';
 
-interface AdminUser { id: string; email: string; role: string; created_at: string; profile_count: number; total_xp: number }
+interface AdminUser { id: string; email: string; role: string; created_at: string; premium_until: string | null; profile_count: number; total_xp: number }
 interface AdminProfile { id: string; name: string; email: string; xp: number; streak: number; total_rounds: number; grade_count: number; grade_sum: number }
 interface ContentItem { id: number; type: string; text: string; difficulty: string; category: string }
 interface DiffLevel { id: number; key: string; label: string; description: string; sort_order: number }
 interface AdminStats { users: number; profiles: number; rounds: number; answers: number; content: number; totalXp: number }
+interface PremiumRequest {
+  id: string; user_id: string; email: string; plan: string; amount_cents: number;
+  status: string; note: string; possible_duplicate: number; created_at: string; decided_at: string | null;
+}
 
 export function Admin() {
   const { me } = useApp();
-  const [tab, setTab] = useState<'overview' | 'users' | 'profiles' | 'content' | 'difficulty'>('overview');
+  const [tab, setTab] = useState<'overview' | 'users' | 'profiles' | 'content' | 'difficulty' | 'premium'>('overview');
 
   if (!me?.isAdmin) {
     return (
@@ -25,7 +29,7 @@ export function Admin() {
 
   const tabs = [
     ['overview', 'Übersicht'], ['users', 'Benutzer'], ['profiles', 'Profile'],
-    ['content', 'Inhalte'], ['difficulty', 'Stufen'],
+    ['content', 'Inhalte'], ['difficulty', 'Stufen'], ['premium', 'Premium'],
   ] as const;
 
   return (
@@ -47,6 +51,7 @@ export function Admin() {
       {tab === 'profiles' && <Profiles />}
       {tab === 'content' && <Content />}
       {tab === 'difficulty' && <Difficulty />}
+      {tab === 'premium' && <PremiumAdmin />}
     </div>
   );
 }
@@ -149,7 +154,7 @@ function Users() {
                 {u.email[0].toUpperCase()}
               </div>
               <div>
-                <p className="font-semibold">{u.email} {u.role === 'admin' && <Badge tone="amber">Admin</Badge>}</p>
+                <p className="font-semibold">{u.email} {u.role === 'admin' && <Badge tone="amber">Admin</Badge>} {u.premium_until && new Date(u.premium_until) > new Date() && <Badge tone="violet">⭐ Premium</Badge>}</p>
                 <p className="text-xs text-slate-500">{u.profile_count} Profile · {u.total_xp} XP · seit {new Date(u.created_at).toLocaleDateString('de-DE')}</p>
               </div>
             </div>
@@ -192,6 +197,67 @@ function NewUserModal({ open, onClose, onCreated }: { open: boolean; onClose: ()
         </div>
       </form>
     </Modal>
+  );
+}
+
+function PremiumAdmin() {
+  const [requests, setRequests] = useState<PremiumRequest[]>([]);
+  const [filter, setFilter] = useState('pending');
+  const [loading, setLoading] = useState(true);
+  const load = () => {
+    get<{ requests: PremiumRequest[] }>(`/admin/premium?status=${filter}`).then((d) => setRequests(d.requests)).finally(() => setLoading(false));
+  };
+  useEffect(() => { setLoading(true); load(); }, [filter]); // eslint-disable-line
+
+  const decide = async (id: string, action: 'approve' | 'reject') => {
+    await post(`/admin/premium/${id}/${action}`, action === 'approve' ? {} : undefined);
+    load();
+  };
+
+  const planLabel = (p: string) => p === 'yearly' ? 'Premium Jahr' : 'Premium Monat';
+
+  if (loading) return <Spinner className="h-8 w-8" />;
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        {['pending', 'approved', 'rejected', 'all'].map((f) => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold capitalize transition ${filter === f ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
+            {f === 'pending' ? 'Offen' : f === 'approved' ? 'Freigeschaltet' : f === 'rejected' ? 'Abgelehnt' : 'Alle'}
+          </button>
+        ))}
+      </div>
+      <Card className="divide-y divide-slate-100 dark:divide-slate-700/50">
+        {requests.map((r) => (
+          <div key={r.id} className="p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="font-semibold">{r.email} {r.possible_duplicate ? <Badge tone="red">⚠ möglicher Duplikat</Badge> : null}</p>
+                <p className="text-xs text-slate-500">
+                  {planLabel(r.plan)} · {(r.amount_cents / 100).toFixed(2).replace('.', ',')} € · {new Date(r.created_at).toLocaleString('de-DE')}
+                </p>
+                {r.note && <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">„{r.note}"</p>}
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge tone={r.status === 'approved' ? 'green' : r.status === 'rejected' ? 'red' : 'amber'}>
+                  {r.status === 'pending' ? 'Offen' : r.status === 'approved' ? 'Freigeschaltet' : 'Abgelehnt'}
+                </Badge>
+                {r.status === 'pending' && (
+                  <>
+                    <Button className="px-3 py-1.5 text-xs" onClick={() => void decide(r.id, 'approve')}>✓ Freischalten</Button>
+                    <Button variant="danger" className="px-3 py-1.5 text-xs" onClick={() => void decide(r.id, 'reject')}>✕ Ablehnen</Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+        {!requests.length && <p className="p-6 text-sm text-slate-400">Keine Anfragen in dieser Ansicht.</p>}
+      </Card>
+      <p className="text-xs text-slate-400">
+        ℹ️ „Freischalten" setzt das Abo des Nutzers automatisch (Monat = 30 Tage, Jahr = 365 Tage ab heute).
+      </p>
+    </div>
   );
 }
 

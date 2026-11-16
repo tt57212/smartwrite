@@ -35,7 +35,21 @@ export interface Me {
   user: User;
   profile: Profile;
   isAdmin: boolean;
+  isPremium?: boolean;
+  premiumUntil?: string | null;
+  dailyRoundLimit?: number | null;
   level: LevelInfo;
+}
+
+export interface PremiumStatus {
+  isPremium: boolean;
+  premiumUntil: string | null;
+  dailyUsed: number;
+  dailyLimit: number | null;
+  iban: string;
+  price: string;
+  plans: { key: string; label: string; days: number; cents: number; price: string }[];
+  requests: { id: string; plan: string; amount_cents: number; status: string; note: string; created_at: string; decided_at: string | null }[];
 }
 
 export interface Difficulty {

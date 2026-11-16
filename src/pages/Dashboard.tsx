@@ -60,6 +60,20 @@ export function Dashboard() {
         </div>
       </div>
 
+      {/* Premium-Hinweis für Gratis-User */}
+      {!me.isPremium && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-orange-500/10">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">⭐</span>
+            <div>
+              <p className="font-bold">Premium: unbegrenzte Runden</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Gratis: 10 Runden/Tag · Premium: ∞ für 4,99 €/Monat</p>
+            </div>
+          </div>
+          <Link to="/premium"><Button variant="secondary" className="px-4 py-2 text-sm">Mehr erfahren</Button></Link>
+        </Card>
+      )}
+
       {/* KPI-Karten */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 animate-fade-up" style={{ animationDelay: '60ms' }}>
         <Card className="p-5">

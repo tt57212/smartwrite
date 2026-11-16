@@ -10,6 +10,7 @@ import { Words } from './pages/Words';
 import { History } from './pages/History';
 import { Rewards } from './pages/Rewards';
 import { ProfilePage } from './pages/Profile';
+import { Premium } from './pages/Premium';
 import { Admin } from './pages/Admin';
 import { Spinner } from './components/ui';
 
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/history" element={<History />} />
             <Route path="/rewards" element={<Rewards />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/premium" element={<Premium />} />
             <Route path="/admin" element={<Admin />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

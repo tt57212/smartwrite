@@ -16,6 +16,14 @@ export interface AuthUser {
   email: string;
   role: string;
   settings: Record<string, unknown>;
+  premium_until?: string | null;
+}
+
+export function isPremiumUser(user: { role: string; premium_until?: string | null }): boolean {
+  if (user.role === 'admin') return true;
+  if (!user.premium_until) return false;
+  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  return user.premium_until > now;
 }
 
 export interface AuthProfile {
@@ -78,7 +86,7 @@ export async function getAuth(c: AuthContext): Promise<Auth | null> {
   if (session.expires_at < now) return null;
 
   const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(session.user_id).first<{
-    id: string; email: string; role: string; settings: string;
+    id: string; email: string; role: string; settings: string; premium_until: string | null;
   }>();
   if (!user) return null;
 
@@ -99,7 +107,7 @@ export async function getAuth(c: AuthContext): Promise<Auth | null> {
   if (!profile || profile.user_id !== user.id) return null;
 
   return {
-    user: { id: user.id, email: user.email, role, settings: safeJson(user.settings) },
+    user: { id: user.id, email: user.email, role, settings: safeJson(user.settings), premium_until: user.premium_until },
     profile,
     sessionToken: token,
   };
