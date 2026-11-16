@@ -37,9 +37,20 @@ export function Dashboard() {
           <Avatar name={me.profile.name} avatar={me.profile.avatar} color={me.profile.color} size="lg" />
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight">{greeting}, {me.profile.name}!</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Level {me.level.level} · {me.level.xpInto}/{me.level.xpNeeded} XP bis Level {me.level.level + 1}
-            </p>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="rounded-lg bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">Level {me.level.level}</span>
+              <span className="text-xs text-slate-500">{me.level.xpInto}/{me.level.xpNeeded} XP</span>
+            </div>
+          </div>
+          {/* Mini XP-Ring */}
+          <div className="relative ml-2 hidden h-14 w-14 sm:block" title={`Level ${me.level.level} · ${me.level.xpInto}/${me.level.xpNeeded} XP`}>
+            <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
+              <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="4" className="stroke-slate-200 dark:stroke-slate-700" />
+              <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="4" strokeLinecap="round"
+                className="stroke-indigo-500" strokeDasharray="97.4"
+                strokeDashoffset={97.4 * (1 - me.level.xpInto / Math.max(me.level.xpNeeded, 1))} />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-xs font-black">{me.level.level}</span>
           </div>
         </div>
         <Link to="/train">

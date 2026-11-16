@@ -59,15 +59,25 @@ function Overview() {
     get<{ rounds: Record<string, unknown>[] }>('/admin/rounds').then((d) => setRounds(d.rounds.slice(0, 15))).catch(() => {});
   }, []);
   if (!stats) return <Spinner className="h-8 w-8" />;
-  const cards = [
-    ['Benutzer', stats.users], ['Profile', stats.profiles], ['Runden', stats.rounds],
-    ['Antworten', stats.answers], ['Inhalte', stats.content], ['XP gesamt', stats.totalXp],
+  const cards: [string, number, string, string][] = [
+    ['Benutzer', stats.users, '👥', 'from-indigo-500 to-violet-500'],
+    ['Profile', stats.profiles, '🧑‍🤝‍🧑', 'from-emerald-500 to-teal-500'],
+    ['Runden', stats.rounds, '✏️', 'from-sky-500 to-cyan-500'],
+    ['Antworten', stats.answers, '💬', 'from-amber-500 to-orange-500'],
+    ['Inhalte', stats.content, '📚', 'from-rose-500 to-pink-500'],
+    ['XP gesamt', stats.totalXp, '⭐', 'from-violet-500 to-purple-500'],
   ];
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        {cards.map(([l, v]) => (
-          <Card key={l as string} className="p-5"><p className="text-xs font-semibold uppercase text-slate-500">{l}</p><p className="mt-1 text-2xl font-extrabold">{v as number}</p></Card>
+        {cards.map(([l, v, icon, grad]) => (
+          <Card key={l} className="flex items-center gap-4 p-5">
+            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${grad} text-xl text-white shadow-md`}>{icon}</div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{l}</p>
+              <p className="text-2xl font-extrabold">{v}</p>
+            </div>
+          </Card>
         ))}
       </div>
       <Card className="p-6">
@@ -95,8 +105,15 @@ function Users() {
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const load = () => { get<{ users: AdminUser[] }>('/admin/users').then((d) => setUsers(d.users)).finally(() => setLoading(false)); };
   useEffect(load, []);
+
+  const filtered = users.filter((u) =>
+    (!search || u.email.toLowerCase().includes(search.toLowerCase())) &&
+    (!roleFilter || u.role === roleFilter)
+  );
 
   const setRole = async (u: AdminUser) => {
     await patch(`/admin/users/${u.id}`, { role: u.role === 'admin' ? 'user' : 'admin' });
@@ -113,14 +130,28 @@ function Users() {
   if (loading) return <Spinner className="h-8 w-8" />;
   return (
     <div className="space-y-4">
-      <div className="flex justify-end"><Button onClick={() => setShowNew(true)}>＋ Benutzer erstellen</Button></div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Input placeholder="🔍 E-Mail suchen …" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
+        <Select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="w-40">
+          <option value="">Alle Rollen</option>
+          <option value="admin">Admins</option>
+          <option value="user">Benutzer</option>
+        </Select>
+        <div className="flex-1" />
+        <Button onClick={() => setShowNew(true)}>＋ Benutzer erstellen</Button>
+      </div>
       {error && <ErrorBox message={error} />}
       <Card className="divide-y divide-slate-100 dark:divide-slate-700/50">
-        {users.map((u) => (
+        {filtered.map((u) => (
           <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-            <div>
-              <p className="font-semibold">{u.email} {u.role === 'admin' && <Badge tone="amber">Admin</Badge>}</p>
-              <p className="text-xs text-slate-500">{u.profile_count} Profile · {u.total_xp} XP · seit {new Date(u.created_at).toLocaleDateString('de-DE')}</p>
+            <div className="flex items-center gap-3">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-white ${u.role === 'admin' ? 'bg-gradient-to-br from-amber-500 to-orange-500' : 'bg-gradient-to-br from-indigo-500 to-violet-500'}`}>
+                {u.email[0].toUpperCase()}
+              </div>
+              <div>
+                <p className="font-semibold">{u.email} {u.role === 'admin' && <Badge tone="amber">Admin</Badge>}</p>
+                <p className="text-xs text-slate-500">{u.profile_count} Profile · {u.total_xp} XP · seit {new Date(u.created_at).toLocaleDateString('de-DE')}</p>
+              </div>
             </div>
             <div className="flex gap-1.5">
               <Button variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => void setRole(u)}>{u.role === 'admin' ? 'Zum User' : 'Zum Admin'}</Button>
@@ -129,6 +160,7 @@ function Users() {
             </div>
           </div>
         ))}
+        {!filtered.length && <p className="p-6 text-sm text-slate-400">Keine Benutzer gefunden.</p>}
       </Card>
       <NewUserModal open={showNew} onClose={() => setShowNew(false)} onCreated={load} />
     </div>

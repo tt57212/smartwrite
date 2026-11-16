@@ -5,6 +5,7 @@ import { speak, stopSpeaking, isTTSSupported } from '../lib/tts';
 import type { ItemResult, RoundResult, Verdict } from '../lib/types';
 import { Badge, Button, Card, ErrorBox, Progress, Spinner, Textarea } from '../components/ui';
 import { RewardIcon } from '../components/Avatar';
+import { VoicePicker } from '../components/VoicePicker';
 
 interface RoundData {
   round: { id: string; mode: string; config: string; status: string };
@@ -178,14 +179,42 @@ export function Session() {
         </div>
       </Card>
 
-      <p className="text-center text-xs text-slate-400">
-        Tipp: Wörter, die nur <em>klingen</em> wie das Original, werden als „phonetisch richtig" gewertet.
-      </p>
+      <div className="space-y-3 pb-6 text-center">
+        <p className="text-xs text-slate-400">
+          Tipp: Wörter, die nur <em>klingen</em> wie das Original, werden als „phonetisch richtig" gewertet.
+        </p>
+        <details className="text-left">
+          <summary className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400">🔊 Stimme & Tempo anpassen</summary>
+          <div className="mt-3"><VoicePicker compact /></div>
+        </details>
+      </div>
     </div>
   );
 }
 
 // ================= ERGEBNISSE =================
+
+function ScoreRing({ percent, grade, gradeColor }: { percent: number; grade: string; gradeColor: string }) {
+  const r = 52;
+  const circ = 2 * Math.PI * r;
+  const off = circ * (1 - Math.min(100, percent) / 100);
+  return (
+    <div className="relative mx-auto mt-4 h-32 w-32">
+      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+        <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="10" />
+        <circle
+          cx="60" cy="60" r={r} fill="none" stroke="white" strokeWidth="10" strokeLinecap="round"
+          strokeDasharray={circ} strokeDashoffset={off}
+          style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.22,1,0.36,1)' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className={`text-4xl font-black drop-shadow ${gradeColor}`}>{grade}</span>
+        <span className="text-sm font-bold text-white/90">{percent}%</span>
+      </div>
+    </div>
+  );
+}
 
 function Results({ result, onAgain, onHome, onNew }: {
   result: RoundResult;
@@ -202,13 +231,10 @@ function Results({ result, onAgain, onHome, onNew }: {
     <div className="mx-auto max-w-3xl space-y-6">
       {/* Ergebnis-Karte */}
       <Card className="overflow-hidden animate-pop">
-        <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-8 text-center text-white">
+        <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 p-8 text-center text-white">
           <p className="text-sm font-medium text-indigo-200">Runde abgeschlossen!</p>
-          <div className="mx-auto mt-4 flex h-28 w-28 items-center justify-center rounded-full border-4 border-white/30">
-            <span className={`text-4xl font-black ${gradeColor}`}>{result.grade}</span>
-          </div>
-          <p className="mt-3 text-2xl font-extrabold">{pct}% richtig</p>
-          <p className="text-sm text-indigo-200">{result.score} / {result.maxScore} Punkte</p>
+          <ScoreRing percent={pct} grade={result.grade} gradeColor={gradeColor} />
+          <p className="mt-1 text-sm text-indigo-200">{result.score} / {result.maxScore} Punkte</p>
         </div>
         <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-slate-700">
           <div className="p-4 text-center">

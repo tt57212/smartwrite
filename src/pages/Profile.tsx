@@ -3,6 +3,7 @@ import { useApp } from '../context';
 import { del, get, patch, post } from '../lib/api';
 import type { Profile } from '../lib/types';
 import { Avatar } from '../components/Avatar';
+import { VoicePicker } from '../components/VoicePicker';
 import { Badge, Button, Card, ErrorBox, Input, Modal, Select, Spinner } from '../components/ui';
 
 const AVATAR_OPTIONS = ['star', 'rocket', 'bot', 'wand', 'cat', 'dog', 'panda', 'alien'];
@@ -143,6 +144,13 @@ export function ProfilePage() {
             </div>
           ))}
         </div>
+      </Card>
+
+      {/* Audio & Stimme */}
+      <Card className="p-6">
+        <h2 className="mb-1 font-bold">Audio & Stimme</h2>
+        <p className="mb-4 text-sm text-slate-500">Wähle eine deutsche Stimme und das Tempo für die Übungen.</p>
+        <VoicePicker />
       </Card>
 
       {/* Konto */}
