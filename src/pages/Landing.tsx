@@ -37,7 +37,7 @@ export function Landing() {
         {/* Linke Seite: Marketing */}
         <div className="hidden flex-col justify-between bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 p-10 text-white md:flex">
           <div className="flex items-center gap-3">
-            <img src="/via.jpg" alt="via" className="h-11 w-11 rounded-2xl object-cover shadow-lg ring-2 ring-white/30" />
+            <img src="/logo.svg" alt="via" className="h-11 w-11 rounded-2xl shadow-lg" />
             <div>
               <span className="text-xl font-extrabold">SmartWrite</span>
               <p className="text-[11px] text-indigo-200">by via industries</p>
@@ -58,7 +58,7 @@ export function Landing() {
         {/* Rechte Seite: Formular */}
         <div className="p-8 sm:p-10">
           <div className="mb-6 flex items-center gap-3 md:hidden">
-            <img src="/via.jpg" alt="via" className="h-10 w-10 rounded-xl object-cover" />
+            <img src="/logo.svg" alt="via" className="h-10 w-10 rounded-xl" />
             <div>
               <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">SmartWrite</h1>
               <p className="text-sm text-slate-500">Rechtschreibung & Schreiben üben</p>

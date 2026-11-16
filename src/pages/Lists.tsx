@@ -82,7 +82,7 @@ export function Lists() {
                   <p className="text-xs text-slate-500">{l.item_count ?? 0} Einträge {l.difficulty ? `· ${l.difficulty}` : ''}</p>
                 </div>
                 <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                  <Link to={`/train`} state={{ listId: l.id }}>
+                  <Link to={`/train?listId=${l.id}`}>
                     <Button variant="secondary" className="px-3 py-1.5 text-xs">Üben</Button>
                   </Link>
                   <Button variant="ghost" className="px-2 py-1.5 text-xs text-red-500" onClick={() => void removeList(l)}>🗑</Button>

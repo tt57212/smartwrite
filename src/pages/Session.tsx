@@ -128,7 +128,8 @@ export function Session() {
       </div>
       <Progress value={index} max={total} />
 
-      <Card className="p-6 sm:p-8 animate-fade-up" style={{ animationDelay: '60ms' }}>
+      <Card className="relative overflow-hidden p-6 sm:p-8 animate-fade-up" style={{ animationDelay: '60ms' }}>
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" />
         <p className="mb-6 text-center text-sm text-slate-500 dark:text-slate-400">
           {data.round.mode === 'dictation' ? '🎧 Hör zu und schreibe das Diktat.' :
            data.round.mode === 'text' ? '🎧 Höre dir den Text an und schreibe ihn auf.' :

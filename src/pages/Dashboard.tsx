@@ -53,9 +53,11 @@ export function Dashboard() {
             <span className="absolute inset-0 flex items-center justify-center text-xs font-black">{me.level.level}</span>
           </div>
         </div>
-        <Link to="/train">
-          <Button className="px-6 py-3 text-base">▶ Jetzt üben</Button>
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/train?mode=word&difficulty=leicht"><Button variant="secondary" className="px-4 py-2 text-xs">⚡ Wörter · Leicht</Button></Link>
+          <Link to="/train?mode=dictation&difficulty=mittel"><Button variant="secondary" className="px-4 py-2 text-xs">🎧 Diktat · Mittel</Button></Link>
+          <Link to="/train"><Button className="px-6 py-3 text-base">▶ Jetzt üben</Button></Link>
+        </div>
       </div>
 
       {/* KPI-Karten */}

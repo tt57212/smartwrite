@@ -9,11 +9,11 @@ export function Train() {
   const { meta } = useApp();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const [mode, setMode] = useState('word');
-  const [difficulty, setDifficulty] = useState('gemischt');
-  const [count, setCount] = useState(10);
+  const [mode, setMode] = useState(params.get('mode') || 'word');
+  const [difficulty, setDifficulty] = useState(params.get('difficulty') || 'gemischt');
+  const [count, setCount] = useState(params.get('mode') === 'text' ? 1 : 10);
   const [weakOnly, setWeakOnly] = useState(params.get('weak') === '1');
-  const [listId, setListId] = useState('');
+  const [listId, setListId] = useState(params.get('listId') || '');
   const [lists, setLists] = useState<WordList[]>([]);
   const [aiBusy, setAiBusy] = useState(false);
   const [error, setError] = useState('');

@@ -27,7 +27,7 @@ export function Layout() {
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 max-lg:hidden">
         <div className="flex items-center gap-2.5 px-5 py-5">
-          <img src="/via.jpg" alt="via" className="h-10 w-10 rounded-2xl object-cover shadow-md ring-1 ring-slate-200 dark:ring-slate-700" />
+          <img src="/logo.svg" alt="via" className="h-10 w-10 rounded-2xl shadow-md" />
           <div>
             <p className="text-base font-extrabold tracking-tight">SmartWrite</p>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">by via industries</p>
@@ -74,7 +74,7 @@ export function Layout() {
 
       {/* Mobile Topbar */}
       <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/90">
-        <span className="flex items-center gap-2 text-base font-extrabold"><img src="/via.jpg" alt="via" className="h-7 w-7 rounded-lg object-cover" />SmartWrite</span>
+        <span className="flex items-center gap-2 text-base font-extrabold"><img src="/logo.svg" alt="via" className="h-7 w-7 rounded-lg" />SmartWrite</span>
         <div className="flex items-center gap-2">
           <ProfileSwitcher compact />
           <ThemeToggle dark={dark} toggle={toggleDark} />
@@ -83,7 +83,7 @@ export function Layout() {
 
       {/* Content */}
       <main className="flex-1 px-4 pb-24 pt-20 sm:px-8 lg:ml-60 lg:pb-10 lg:pt-8">
-        <div className="mx-auto max-w-5xl">
+        <div className="page-enter mx-auto max-w-5xl">
           <div className="mb-4 flex items-center justify-end gap-2 max-lg:hidden">
             <ThemeToggle dark={dark} toggle={toggleDark} />
             <button onClick={onLogout} className="rounded-xl px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
