@@ -96,27 +96,34 @@ export function Premium() {
         </Card>
       ) : (
         <>
-          {/* Preise */}
+          {/* Preise – bei deaktiviertem Verkauf ausgegraut, aber sichtbar */}
           <div className="grid gap-4 sm:grid-cols-3">
-            {data.plans.map((p) => (
-              <button
-                key={p.key}
-                onClick={() => setPlan(p.key)}
-                className={`relative rounded-2xl border-2 p-6 text-left transition-all active:scale-[0.99] ${
-                  plan === p.key
-                    ? 'border-indigo-500 bg-indigo-50 shadow-lg shadow-indigo-500/10 dark:border-indigo-400 dark:bg-indigo-500/10'
-                    : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800/60'
-                }`}
-              >
-                {p.seats !== undefined && p.seats > 0 && <div className="absolute -top-3 left-4"><Badge tone="violet">Team</Badge></div>}
-                {p.seats === 0 && <div className="absolute -top-3 left-4"><Badge tone="violet">Team · ∞</Badge></div>}
+            {data.plans.map((p) => {
+              const salesOff = data.salesEnabled === false;
+              return (
+                <button
+                  key={p.key}
+                  onClick={() => { if (!salesOff) setPlan(p.key); }}
+                  disabled={salesOff}
+                  className={`relative rounded-2xl border-2 p-6 text-left transition-all ${
+                    salesOff
+                      ? 'cursor-not-allowed border-slate-200 opacity-50 grayscale dark:border-slate-700'
+                      : plan === p.key
+                        ? 'border-indigo-500 bg-indigo-50 shadow-lg shadow-indigo-500/10 dark:border-indigo-400 dark:bg-indigo-500/10'
+                        : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800/60'
+                  }`}
+                >
+                  {salesOff && <div className="absolute -top-3 right-4"><Badge tone="slate">Demnächst</Badge></div>}
+                  {!salesOff && p.seats !== undefined && p.seats > 0 && <div className="absolute -top-3 left-4"><Badge tone="violet">Team</Badge></div>}
+                  {!salesOff && p.seats === 0 && <div className="absolute -top-3 left-4"><Badge tone="violet">Team · ∞</Badge></div>}
                 <p className="font-bold">{p.label}</p>
                 <p className="mt-2 text-3xl font-black">{p.price}<span className="text-sm font-medium text-slate-400"> inkl. MwSt.</span></p>
                 <p className="mt-1 text-xs text-slate-500">
                   {p.seats ? (p.seats > 0 ? `Für dich + ${p.seats} Team-Plätze` : 'Unbegrenzte Team-Plätze') : p.days === 365 ? '≈ 4,17 € pro Monat' : 'Jederzeit kündbar'}
                 </p>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
 
           {/* Pro-Features */}
@@ -132,7 +139,8 @@ export function Premium() {
             ) : null}
           </Card>
 
-          {/* Widerruf-Einwilligung (rechtlich erforderlich für digitale Inhalte) */}
+          {/* Widerruf-Einwilligung (rechtlich erforderlich für digitale Inhalte) – nur wenn Kauf möglich */}
+          {data.salesEnabled !== false && (
           <Card className="p-5">
             <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-700 dark:text-slate-300">
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 h-4 w-4 accent-indigo-600" />
@@ -144,6 +152,7 @@ export function Premium() {
               </span>
             </label>
           </Card>
+          )}
 
           {/* Kauf nur wenn Verkauf aktiviert */}
           {data.salesEnabled === false ? (
