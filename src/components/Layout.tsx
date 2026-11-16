@@ -20,6 +20,7 @@ const NAV = [
 export function Layout() {
   const { me, logout, dark, toggleDark, switchProfile } = useApp();
   const navigate = useNavigate();
+  const [moreOpen, setMoreOpen] = useState(false);
   if (!me) return null;
 
   const onLogout = async () => { await logout(); navigate('/login'); };
@@ -123,21 +124,47 @@ export function Layout() {
       </main>
       <Tour />
 
-      {/* Mobile Bottom-Nav: alle Menüpunkte horizontal scrollbar */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex gap-1 overflow-x-auto border-t border-slate-200 bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] pt-1.5 backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/95" style={{ scrollbarWidth: 'none' }}>
-        {NAV.map((n) => (
-          <NavLink key={n.to} to={n.to} end={n.end}
-            className={({ isActive }) => `flex min-w-[64px] flex-1 flex-col items-center gap-0.5 rounded-xl px-2 py-2 text-[10px] font-medium transition ${isActive ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
+      {/* Mobile Bottom-Nav: 4 Hauptbereiche + Mehr-Menü */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] pt-1.5 backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/95">
+        {NAV.slice(0, 4).map((n) => (
+          <NavLink key={n.to} to={n.to} end={n.end} onClick={() => setMoreOpen(false)}
+            className={({ isActive }) => `flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[10px] font-medium transition ${isActive ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
             <span className="text-lg leading-none">{n.icon}</span>{n.label}
           </NavLink>
         ))}
-        {me.isAdmin && (
-          <NavLink to="/admin"
-            className={({ isActive }) => `flex min-w-[64px] flex-1 flex-col items-center gap-0.5 rounded-xl px-2 py-2 text-[10px] font-medium transition ${isActive ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}`}>
-            <span className="text-lg leading-none">�️</span>Admin
-          </NavLink>
-        )}
+        <button
+          onClick={() => setMoreOpen(true)}
+          className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[10px] font-medium transition ${moreOpen ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
+        >
+          <span className="text-lg leading-none">☰</span>Mehr
+        </button>
       </nav>
+
+      {/* Mobile „Mehr" Sheet */}
+      {moreOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setMoreOpen(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div
+            className="absolute inset-x-0 bottom-0 animate-fade-up rounded-t-3xl border-t border-slate-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-slate-700 dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
+            <div className="grid grid-cols-3 gap-2">
+              {[...NAV.slice(4), ...(me.isAdmin ? [{ to: '/admin', label: 'Admin', icon: '🛡️', end: false }] : [])].map((n) => (
+                <NavLink key={n.to} to={n.to} end={n.end} onClick={() => setMoreOpen(false)}
+                  className={({ isActive }) => `flex flex-col items-center gap-1.5 rounded-2xl px-2 py-4 text-xs font-semibold transition ${isActive ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300'}`}>
+                  <span className="text-2xl">{n.icon}</span>{n.label}
+                </NavLink>
+              ))}
+            </div>
+            <div className="mt-3 flex justify-center gap-4 border-t border-slate-100 pt-3 text-[11px] text-slate-400 dark:border-slate-800">
+              <NavLink to="/datenschutz" onClick={() => setMoreOpen(false)} className="hover:text-slate-600 dark:hover:text-slate-300">Datenschutz</NavLink>
+              <NavLink to="/impressum" onClick={() => setMoreOpen(false)} className="hover:text-slate-600 dark:hover:text-slate-300">Impressum</NavLink>
+              <NavLink to="/agb" onClick={() => setMoreOpen(false)} className="hover:text-slate-600 dark:hover:text-slate-300">AGB</NavLink>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
