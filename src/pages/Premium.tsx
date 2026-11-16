@@ -145,8 +145,14 @@ export function Premium() {
             </label>
           </Card>
 
-          {/* Sofort-Kauf per Karte (Stripe) */}
-          {data.cardPayment ? (
+          {/* Kauf nur wenn Verkauf aktiviert */}
+          {data.salesEnabled === false ? (
+            <Card className="border-amber-200 bg-amber-50/60 p-6 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
+              <p className="text-2xl">🚧</p>
+              <p className="mt-2 font-bold">Kauf vorübergehend deaktiviert</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Der Premium-Kauf ist aktuell nicht verfügbar. Schau später wieder vorbei!</p>
+            </Card>
+          ) : data.cardPayment ? (
             <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-violet-50 p-6 dark:border-indigo-500/30 dark:from-indigo-500/10 dark:to-violet-500/10">
               <h2 className="mb-1 font-bold">⚡ Sicher bezahlen</h2>
               <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">

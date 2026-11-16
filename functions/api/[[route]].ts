@@ -933,6 +933,14 @@ async function getPlans(env: Env): Promise<Record<string, { label: string; days:
   }
 }
 
+// Premium-Verkauf global an/abschaltbar (app_settings.premium_sales, Default: aus)
+async function salesEnabled(env: Env): Promise<boolean> {
+  try {
+    const row = await env.DB.prepare("SELECT value FROM app_settings WHERE key = 'premium_sales'").first<{ value: string }>();
+    return row?.value === '1';
+  } catch { return false; }
+}
+
 const PREMIUM_IBAN = 'DE91 2004 1188 0418 0949 00';
 const PREMIUM_PRICE = '4,99 € / Monat oder 49,99 € / Jahr';
 
@@ -977,6 +985,7 @@ app.get('/premium', async (c) => {
     price: PREMIUM_PRICE,
     plans: Object.entries(plans).map(([key, p]) => ({ key, ...p, price: (p.cents / 100).toFixed(2).replace('.', ',') + ' €' })),
     cardPayment: stripeConfigured(env),
+    salesEnabled: await salesEnabled(env),
     requests,
   });
 });
@@ -1065,6 +1074,7 @@ function stripeConfigured(env: Env): boolean {
 app.post('/premium/checkout', async (c) => {
   const auth = await requireAuth(c);
   const env = c.env;
+  if (!(await salesEnabled(env))) return jsonError(c, 'Der Premium-Kauf ist vorübergehend deaktiviert.', 403);
   if (!stripeConfigured(env)) return jsonError(c, 'Online-Zahlung nicht konfiguriert.', 503);
   if (isPremiumUser(auth.user)) return jsonError(c, 'Du hast bereits Premium.');
   const { plan } = await c.req.json<{ plan?: string }>();
@@ -1232,12 +1242,17 @@ admin.post('/premium/:id/approve', async (c) => {
 // Admin: Premium-Tarife anpassen (Preise, Laufzeit, Team-Plätze, aktivieren/deaktivieren)
 admin.get('/premium-config', async (c) => {
   const plans = await getPlans(c.env);
-  return c.json({ plans, defaults: DEFAULT_PLANS });
+  return c.json({ plans, defaults: DEFAULT_PLANS, salesEnabled: await salesEnabled(c.env) });
 });
 
 admin.put('/premium-config', async (c) => {
-  const body = await c.req.json<{ plans?: Record<string, { label?: string; days?: number; cents?: number; seats?: number; enabled?: boolean }> }>();
-  if (!body.plans || typeof body.plans !== 'object') return jsonError(c, 'Ungültige Daten.');
+  const body = await c.req.json<{ plans?: Record<string, { label?: string; days?: number; cents: number; seats?: number; enabled?: boolean }>; salesEnabled?: boolean }>();
+  if (body.salesEnabled !== undefined) {
+    await c.env.DB.prepare(
+      "INSERT INTO app_settings (key, value) VALUES ('premium_sales', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+    ).bind(body.salesEnabled ? '1' : '0').run();
+  }
+  if (!body.plans || typeof body.plans !== 'object') return c.json({ ok: true, salesEnabled: await salesEnabled(c.env) });
   const clean: Record<string, unknown> = {};
   for (const [key, p] of Object.entries(body.plans)) {
     if (!/^[a-z_]+$/.test(key)) continue;
@@ -1252,7 +1267,7 @@ admin.put('/premium-config', async (c) => {
   await c.env.DB.prepare(
     "INSERT INTO app_settings (key, value) VALUES ('premium_plans', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
   ).bind(JSON.stringify(clean)).run();
-  return c.json({ ok: true, plans: await getPlans(c.env) });
+  return c.json({ ok: true, plans: await getPlans(c.env), salesEnabled: await salesEnabled(c.env) });
 });
 
 admin.post('/premium/:id/reject', async (c) => {

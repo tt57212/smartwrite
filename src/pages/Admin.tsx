@@ -204,13 +204,14 @@ interface PlanConfig { label: string; days: number; cents: number; seats?: numbe
 
 function PlanEditor() {
   const [plans, setPlans] = useState<Record<string, PlanConfig>>({});
+  const [salesEnabled, setSalesEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
 
   useEffect(() => {
-    get<{ plans: Record<string, PlanConfig> }>('/admin/premium-config')
-      .then((d) => setPlans(d.plans)).finally(() => setLoading(false));
+    get<{ plans: Record<string, PlanConfig>; salesEnabled: boolean }>('/admin/premium-config')
+      .then((d) => { setPlans(d.plans); setSalesEnabled(!!d.salesEnabled); }).finally(() => setLoading(false));
   }, []);
 
   const set = (key: string, field: keyof PlanConfig, value: string | number | boolean) =>
@@ -219,8 +220,19 @@ function PlanEditor() {
   const save = async () => {
     setSaving(true); setMsg('');
     try {
-      await put('/admin/premium-config', { plans });
-      setMsg('Tarife gespeichert.');
+      await put('/admin/premium-config', { plans, salesEnabled });
+      setMsg('Gespeichert.');
+    } catch (e) { setMsg(e instanceof Error ? e.message : 'Fehler'); }
+    finally { setSaving(false); }
+  };
+
+  const toggleSales = async () => {
+    const next = !salesEnabled;
+    setSaving(true); setMsg('');
+    try {
+      await put('/admin/premium-config', { salesEnabled: next });
+      setSalesEnabled(next);
+      setMsg(next ? 'Kauf aktiviert!' : 'Kauf deaktiviert!');
     } catch (e) { setMsg(e instanceof Error ? e.message : 'Fehler'); }
     finally { setSaving(false); }
   };
@@ -233,6 +245,20 @@ function PlanEditor() {
     <Card className="p-5">
       <h3 className="mb-1 font-bold">💰 Tarife & Preise</h3>
       <p className="mb-4 text-xs text-slate-500">Hier kannst du Preise, Laufzeiten, Team-Plätze und die Aktivierung der Tarife anpassen. Änderungen gelten sofort für neue Käufe.</p>
+      {/* Verkauf an/aus */}
+      <div className={`mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4 ${salesEnabled ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60'}`}>
+        <div>
+          <p className="text-sm font-bold">{salesEnabled ? '🟢 Verkauf aktiv' : '🔴 Verkauf deaktiviert'}</p>
+          <p className="text-xs text-slate-500">Wenn aus, können Kunden kein Premium kaufen (Checkout blockiert).</p>
+        </div>
+        <button
+          onClick={() => void toggleSales()}
+          disabled={saving}
+          className={`relative h-7 w-12 rounded-full transition ${salesEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+        >
+          <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${salesEnabled ? 'left-[22px]' : 'left-0.5'}`} />
+        </button>
+      </div>
       <div className="space-y-3">
         {keys.map((key) => {
           const p = plans[key];
