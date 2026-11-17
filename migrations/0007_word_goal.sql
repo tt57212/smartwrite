@@ -1,0 +1,1 @@
+ALTER TABLE profiles ADD COLUMN daily_goal_words INTEGER NOT NULL DEFAULT 20;

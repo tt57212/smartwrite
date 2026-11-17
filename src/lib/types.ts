@@ -13,6 +13,7 @@ export interface Profile {
   color: string;
   daily_goal_xp: number;
   weekly_goal_xp?: number;
+  daily_goal_words?: number;
   xp: number;
   streak: number;
   best_streak: number;
@@ -134,6 +135,8 @@ export interface Stats {
   level: LevelInfo;
   todayXp: number;
   dailyGoal: number;
+  todayWords?: number;
+  wordGoal?: number;
   weekXp?: number;
   weeklyGoal?: number;
   avgGrade: number | null;

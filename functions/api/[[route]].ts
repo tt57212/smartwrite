@@ -198,7 +198,7 @@ app.patch('/profiles/:id', async (c) => {
     .bind(id, auth.user.id).first<{ id: string }>();
   if (!profile) return jsonError(c, 'Profil nicht gefunden.', 404);
   const body = await c.req.json<{
-    name?: string; avatar?: string; color?: string; dailyGoalXp?: number; weeklyGoalXp?: number; theme?: string;
+    name?: string; avatar?: string; color?: string; dailyGoalXp?: number; weeklyGoalXp?: number; dailyGoalWords?: number; theme?: string;
   }>();
   // Premium-exklusive Farben serverseitig absichern
   const PREMIUM_COLORS = ['gold', 'ocean', 'royal'];
@@ -206,10 +206,11 @@ app.patch('/profiles/:id', async (c) => {
     return jsonError(c, 'Diese Farbe ist nur mit Premium verfügbar.', 403);
   }
   await c.env.DB.prepare(
-    'UPDATE profiles SET name = COALESCE(?, name), avatar = COALESCE(?, avatar), color = COALESCE(?, color), daily_goal_xp = COALESCE(?, daily_goal_xp), weekly_goal_xp = COALESCE(?, weekly_goal_xp) WHERE id = ?'
+    'UPDATE profiles SET name = COALESCE(?, name), avatar = COALESCE(?, avatar), color = COALESCE(?, color), daily_goal_xp = COALESCE(?, daily_goal_xp), weekly_goal_xp = COALESCE(?, weekly_goal_xp), daily_goal_words = COALESCE(?, daily_goal_words) WHERE id = ?'
   ).bind(body.name ?? null, body.avatar ?? null, body.color ?? null,
     body.dailyGoalXp ? Math.min(Math.max(body.dailyGoalXp, 10), 1000) : null,
-    body.weeklyGoalXp ? Math.min(Math.max(body.weeklyGoalXp, 50), 5000) : null, id).run();
+    body.weeklyGoalXp ? Math.min(Math.max(body.weeklyGoalXp, 50), 5000) : null,
+    body.dailyGoalWords !== undefined ? Math.min(Math.max(body.dailyGoalWords, 0), 1000) : null, id).run();
   return c.json({ ok: true });
 });
 
@@ -655,6 +656,13 @@ app.get('/stats', async (c) => {
      WHERE r.profile_id = ? AND a.created_at >= datetime('now', '-7 days')`
   ).bind(pid).first<{ xp: number }>();
 
+  // Heute geübte Wörter (Antworten in heute beendeten Runden)
+  const todayWordsRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS n FROM answers a
+     JOIN rounds r ON r.id = a.round_id
+     WHERE r.profile_id = ? AND date(a.created_at) = date('now')`
+  ).bind(pid).first<{ n: number }>();
+
   const { results: weekly } = await env.DB.prepare(
     `SELECT date(r.finished_at) AS day, COUNT(*) AS rounds, ROUND(AVG(r.percent),1) AS avgPercent
      FROM rounds r WHERE r.profile_id = ? AND r.status='finished' AND r.finished_at >= date('now','-14 days')
@@ -687,6 +695,8 @@ app.get('/stats', async (c) => {
     level: { level, xpInto: into, xpNeeded: needed, xp: auth.profile.xp },
     todayXp: todayRow?.xp || 0,
     dailyGoal: auth.profile.daily_goal_xp,
+    todayWords: todayWordsRow?.n || 0,
+    wordGoal: (auth.profile as { daily_goal_words?: number }).daily_goal_words ?? 20,
     weekXp: weekRow?.xp || 0,
     weeklyGoal: (auth.profile as { weekly_goal_xp?: number }).weekly_goal_xp ?? 500,
     avgGrade,

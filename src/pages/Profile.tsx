@@ -21,6 +21,7 @@ export function ProfilePage() {
   const [color, setColor] = useState('indigo');
   const [goal, setGoal] = useState(100);
   const [weeklyGoal, setWeeklyGoal] = useState(500);
+  const [wordGoal, setWordGoal] = useState(20);
   const [aiInstructions, setAiInstructions] = useState('');
   const [aiMsg, setAiMsg] = useState('');
   const [msg, setMsg] = useState('');
@@ -36,6 +37,7 @@ export function ProfilePage() {
       setColor(me.profile.color);
       setGoal(me.profile.daily_goal_xp);
       setWeeklyGoal(me.profile.weekly_goal_xp ?? 500);
+      setWordGoal(me.profile.daily_goal_words ?? 20);
       setAiInstructions(typeof me.user.settings?.ai_instructions === 'string' ? me.user.settings.ai_instructions : '');
     }
     get<{ profiles: Profile[] }>('/profiles').then((d) => setProfiles(d.profiles)).catch(() => {});
@@ -47,7 +49,7 @@ export function ProfilePage() {
     e.preventDefault();
     setBusy(true); setError(''); setMsg('');
     try {
-      await patch(`/profiles/${me.profile.id}`, { name, avatar, color, dailyGoalXp: goal, weeklyGoalXp: weeklyGoal });
+      await patch(`/profiles/${me.profile.id}`, { name, avatar, color, dailyGoalXp: goal, weeklyGoalXp: weeklyGoal, dailyGoalWords: wordGoal });
       setMsg('Profil gespeichert.');
       await refresh();
     } catch (err) { setError(err instanceof Error ? err.message : 'Fehler'); }
@@ -128,6 +130,22 @@ export function ProfilePage() {
             <label className="mb-1.5 block text-sm font-medium">Wöchentliches Lernziel: {weeklyGoal} XP</label>
             <input type="range" min={50} max={5000} step={50} value={weeklyGoal} onChange={(e) => setWeeklyGoal(parseInt(e.target.value))} className="w-full accent-indigo-600" />
             <p className="mt-1 text-xs text-slate-500">Der Fortschritt dazu siehst du auf dem Dashboard.</p>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">Wörter pro Tag: {wordGoal}</label>
+            <input type="range" min={0} max={200} step={5} value={wordGoal} onChange={(e) => setWordGoal(parseInt(e.target.value))} className="w-full accent-emerald-600" />
+            <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-xs dark:border-emerald-500/30 dark:bg-emerald-500/10">
+              <p className="font-semibold text-emerald-800 dark:text-emerald-200">👁 Vorschau deines Ziels</p>
+              {wordGoal === 0 ? (
+                <p className="mt-1 text-slate-600 dark:text-slate-300">Kein Wortziel – du übst frei ohne Tagesvorgabe.</p>
+              ) : (
+                <p className="mt-1 text-slate-600 dark:text-slate-300">
+                  Mit <strong>{wordGoal} Wörtern/Tag</strong> ≈ <strong>{Math.max(1, Math.round(wordGoal / 10))} kurze Runde{wordGoal > 10 ? 'n' : ''}</strong> oder <strong>{Math.max(1, Math.round(wordGoal * 10 / 60))} Min.</strong> Üben.
+                  <br />Beispiel: <em>„{sampleWords(wordGoal)}"</em> – so viele Wörter wie in einem Wörterbuch-Eintrag pro Tag.
+                </p>
+              )}
+            </div>
           </div>
 
           {error && <ErrorBox message={error} />}
@@ -258,6 +276,13 @@ export function ProfilePage() {
       </Modal>
     </div>
   );
+}
+
+function sampleWords(n: number): string {
+  const pool = ['Haus', 'Baum', 'Auto', 'Buch', 'Hund', 'Katze', 'Schule', 'Garten', 'Wasser', 'Brot', 'Tisch', 'Stuhl', 'Blume', 'Vogel', 'Mond', 'Stern', 'Regen', 'Wind', 'Straße', 'Brücke'];
+  const out: string[] = [];
+  for (let i = 0; i < Math.min(n, 10); i++) out.push(pool[i % pool.length]);
+  return out.join(', ') + (n > 10 ? ` … (+${n - 10} weitere)` : '');
 }
 
 function colorClass(c: string): string {
