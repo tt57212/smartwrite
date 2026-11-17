@@ -9,7 +9,7 @@ export function ImpressumPage() {
           <section>
             <h2 className="mb-2 text-lg font-bold">Angaben gemäß § 5 DDG</h2>
             <p>
-              <strong>Vincent Telsen</strong><br />
+              <strong>Vincent Elsen</strong><br />
               via industries<br />
               {/* TODO: Straße und PLZ vom Betreiber eintragen */}
               [Straße und Hausnummer]<br />
@@ -26,7 +26,7 @@ export function ImpressumPage() {
           </section>
           <section>
             <h2 className="mb-2 text-lg font-bold">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
-            <p>Vincent Telsen, via industries – Kontakt wie oben.</p>
+            <p>Vincent Elsen, via industries – Kontakt wie oben.</p>
           </section>
           <section>
             <h2 className="mb-2 text-lg font-bold">Streitschlichtung</h2>
